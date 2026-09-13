@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCSE Revision Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chalk-bg: #17231f;
+    --chalk-bg-2: #101915;
+    --chalk-line: rgba(245,239,225,0.24);
+    --chalk-text: #f5efe1;
+    --chalk-text-dim: rgba(245,239,225,0.56);
+    --paper-bg: #fbf7ed;
+    --paper-line: #ddd4c3;
+    --ink: #25231f;
+    --ink-dim: #6c675d;
+    --shadow: 0 18px 45px rgba(10,18,15,.18);
+    --radius: 14px;
+
+    --c-englit: #C6558D;
+    --c-englang: #A15C8C;
+    --c-maths: #3E7CB1;
+    --c-bio: #4C9A5D;
+    --c-chem: #D98A3D;
+    --c-phys: #7A5FB5;
+    --c-french: #3FA7A3;
+    --c-dt: #B0562B;
+    --c-business: #B79A2E;
+    --c-cs: #4A5DBD;
+
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'IBM Plex Sans', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family: var(--sans);
+    background:
+      radial-gradient(circle at 50% 48%, rgba(51,132,255,.15), transparent 30%),
+      radial-gradient(circle at 18% 18%, rgba(53,235,219,.10), transparent 25%),
+      radial-gradient(circle at 82% 82%, rgba(115,76,255,.12), transparent 28%),
+      linear-gradient(145deg,#07152b 0%,#0b1831 46%,#071126 100%);
+    color: var(--chalk-text);
+    overflow-x:hidden;
+  }
+  body:before{
+    content:''; position:fixed; inset:0; pointer-events:none; opacity:.18;
+    background-image:radial-gradient(rgba(255,255,255,.35) .6px, transparent .7px);
+    background-size:7px 7px; mix-blend-mode:soft-light;
+  }
+  #app{ min-height:100vh; position:relative; }
+
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; gap:10px;
+    padding:13px 18px;
+    background:rgba(16,25,21,.82); backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .topbar.on-paper{ background: rgba(251,249,244,0.9); backdrop-filter: blur(4px); border-bottom:1px solid var(--paper-line); }
+  .crumb{
+    font-family: var(--mono);
+    font-size:12.5px;
+    letter-spacing:0.02em;
+    color: var(--chalk-text-dim);
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .topbar.on-paper .crumb{ color: var(--ink-dim); }
+  .crumb button{ all:unset; cursor:pointer; color:inherit; border-bottom:1px solid transparent; }
+  .crumb button:hover{ border-bottom:1px solid currentColor; }
+  .crumb .sep{ opacity:0.5; }
+  .crumb .current{ color: var(--chalk-text); }
+  .topbar.on-paper .crumb .current{ color: var(--ink); }
+
+  .canvas-wrap{
+    position:relative; width:100%; min-height:calc(100vh - 56px);
+    display:flex; align-items:center; justify-content:center; padding:10px 8px 42px;
+    overflow:hidden; isolation:isolate;
+  }
+  .canvas-wrap:before{
+    content:''; position:absolute; inset:0; z-index:-2;
+    background-image:radial-gradient(rgba(150,205,255,.55) .65px,transparent .9px);
+    background-size:54px 54px; opacity:.23; animation:starDrift 28s linear infinite;
+  }
+  .canvas-wrap:after{
+    content:'GCSE REVISION • TAP A NODE'; position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:9px; letter-spacing:.16em; color:rgba(198,224,255,.38); white-space:nowrap;
+  }
+  @keyframes starDrift{from{background-position:0 0}to{background-position:54px 54px}}
+  svg.map{ width:min(94vw,780px); max-height:calc(100vh - 90px); height:auto; overflow:visible; filter:drop-shadow(0 20px 50px rgba(0,0,0,.28)); }
+  .orbit{fill:none;stroke:rgba(134,190,255,.13);stroke-width:1;vector-effect:non-scaling-stroke}
+  .orbit.faint{stroke:rgba(134,190,255,.08)}
+  .branch{fill:none;stroke:rgba(135,204,255,.30);stroke-width:1.25;stroke-dasharray:2 7;animation:branchPulse 4.5s ease-in-out infinite}
+  @keyframes branchPulse{0%,100%{opacity:.38}50%{opacity:.85}}
+  /* Keep the SVG group's positional transform untouched: applying a CSS transform to the group
+     would override its translate(...) attribute on hover and make the node jump/shake. */
+  .node{transform-box:fill-box;transform-origin:center}
+  .node-circle{transition:filter .22s ease,opacity .22s ease,stroke-width .22s ease;cursor:pointer}
+  .node.active:hover .node-circle,.node.active:focus .node-circle{filter:brightness(1.25) drop-shadow(0 0 13px currentColor);stroke-width:1.8}
+  .node.active:hover .node-inner{opacity:.16}
+  .node.inactive{cursor:default;opacity:.36}
+  .node text{font-family:var(--sans);font-weight:600;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+  .node-glow{opacity:.55;pointer-events:none;animation:nodeGlow 2.8s ease-in-out infinite}
+  @keyframes nodeGlow{0%,100%{opacity:.30}50%{opacity:.72}}
+  .center-halo{fill:none;stroke:rgba(76,235,231,.22);stroke-width:2;animation:halo 3.5s ease-in-out infinite}
+  .center-circle{fill:url(#coreGrad);stroke:rgba(108,246,240,.75);stroke-width:1.2;filter:drop-shadow(0 0 15px rgba(67,226,220,.42))}
+  .center-label{font-family:var(--serif);font-weight:600;fill:#eaffff;text-anchor:middle;dominant-baseline:middle;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .center-sub{font-family:var(--mono);fill:rgba(222,255,255,.72);font-size:10px;text-anchor:middle}
+  .badge{font-family:var(--mono);font-size:8.5px;fill:rgba(207,231,255,.58);text-anchor:middle}
+  @keyframes halo{0%,100%{opacity:.45;transform:scale(.98)}50%{opacity:.9;transform:scale(1.04)}}
+  .hint{text-align:center;font-family:var(--mono);font-size:12px;color:rgba(205,229,255,.62);margin-top:-8px;padding-bottom:18px}
+  .map-legend{position:absolute;top:18px;right:22px;display:flex;gap:7px;align-items:center;font-family:var(--mono);font-size:9px;color:rgba(205,229,255,.5);letter-spacing:.05em}
+  .legend-dot{width:7px;height:7px;border-radius:50%;box-shadow:0 0 9px currentColor}
+  @media(max-width:650px){svg.map{width:108vw;max-height:none}.map-legend{display:none}}
+
+  .page{
+    color: var(--ink);
+    min-height: calc(100vh - 56px);
+    padding: 0 20px 70px;
+    background-color: color-mix(in srgb, var(--accent) 6%, var(--paper-bg));
+    position:relative;
+  }
+  .page:before{
+    content:''; position:absolute; top:0; left:0; right:0; height:6px;
+    background:linear-gradient(90deg,transparent 0 4%,var(--accent) 4% 96%,transparent 96%); opacity:.9;
+  }
+  .page:after{
+    content:'REVISION NOTES'; position:absolute; top:18px; right:18px;
+    font-family:var(--mono); font-size:9px; letter-spacing:.14em;
+    color:color-mix(in srgb,var(--accent) 58%,var(--ink-dim)); opacity:.65;
+  }
+  .page.style-grid{
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--accent) 14%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  .page.style-lines{
+    background-image: repeating-linear-gradient(
+      to bottom, transparent 0px, transparent 30px,
+      color-mix(in srgb, var(--accent) 22%, transparent) 31px
+    );
+  }
+  .page-inner{ max-width: 760px; margin: 0 auto; }
+  .page-eyebrow{ letter-spacing:.08em; text-transform:uppercase; }
+  .page-eyebrow{ font-family: var(--mono); font-size:12px; color: color-mix(in srgb, var(--accent) 70%, var(--ink-dim)); margin-top:22px; font-weight:500; }
+  .page-title{ font-family: var(--serif); font-size: 38px; font-weight:650; margin: 7px 0 10px; line-height:1.08; letter-spacing:-.02em; }
+  .title-rule{ width:52px; height:4px; background: var(--accent); border-radius:2px; margin-bottom:24px; }
+  .section{ margin-bottom: 26px; background:rgba(255,255,255,.68); border-radius:var(--radius); padding:20px 21px; border:1px solid rgba(55,45,30,.07); box-shadow:0 5px 18px rgba(45,38,28,.045); }
+  .section:nth-of-type(even){ transform:rotate(.12deg); }
+  .section:nth-of-type(odd){ transform:rotate(-.08deg); }
+  .section h3{ font-family: var(--serif); font-size:20px; font-weight:650; margin:0 0 13px; border-bottom:1px solid var(--paper-line); padding-bottom:9px; }
+  .section h3:before{ content:'✦'; color:var(--accent); font-family:var(--sans); font-size:12px; margin-right:8px; vertical-align:2px; }
+  .section ul{ margin:0; padding-left: 20px; }
+  .section li{ margin-bottom:7px; line-height:1.5; }
+  .def{ margin-bottom:10px; line-height:1.5; }
+  .def b{ font-weight:600; }
+  .quote{ font-family: var(--serif); font-style:italic; font-size:16px; border-left: 3px solid var(--accent); padding-left:14px; margin: 0 0 8px; color:#3a3833; }
+  .diagram-box{ background:#fff; border:1px solid var(--paper-line); border-radius:6px; padding:16px; margin:8px 0 4px; display:flex; justify-content:center; }
+  .diagram-caption{ font-size:13.5px;color:var(--ink-dim); margin-top:8px; }
+  .tip{ background:color-mix(in srgb,var(--accent) 11%,white); border-radius:12px; padding:15px 17px; font-size:14.5px; line-height:1.55; border-left:4px solid var(--accent); box-shadow:0 5px 16px rgba(45,38,28,.06); }
+  .tip b{ font-family: var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; display:block; margin-bottom:6px; color: var(--accent); }
+
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:10px 0; }
+  .flow-step{ background: color-mix(in srgb, var(--accent) 14%, white); border:1px solid color-mix(in srgb, var(--accent) 40%, white); border-radius:8px; padding:8px 12px; font-size:12.5px; font-family:var(--sans); }
+  .flow-arrow{ font-family:var(--mono); color:var(--ink-dim); font-size:14px; }
+
+  .tension{ display:flex; align-items:flex-end; gap:10px; height:110px; margin:16px 0 6px; }
+  .tension-col{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; flex:1; height:100%; }
+  .tension-bar{ width:100%; max-width:34px; background: var(--accent); border-radius:4px 4px 0 0; opacity:0.85; }
+  .tension-label{ font-family: var(--mono); font-size:9px; margin-top:6px; color: var(--ink-dim); text-align:center; }
+
+  .punnett{ border-collapse:collapse; font-family:var(--mono); font-size:13px; margin:8px 0; }
+  .punnett td, .punnett th{ border:1px solid var(--paper-line); width:46px; height:36px; text-align:center; background:#fff; }
+  .punnett th{ background: color-mix(in srgb, var(--accent) 12%, white); }
+
+  .quote-group{ margin-bottom:24px; }
+  .quote-group:last-child{ margin-bottom:0; }
+  .quote-group-title{ font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:0.04em; color:var(--accent); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+  .quote-group-title .num{ background:var(--accent); color:#fff; width:20px; height:20px; min-width:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px; font-family:var(--sans); }
+  .quote-block{ margin-bottom:16px; padding-bottom:14px; border-bottom:1px dashed var(--paper-line); }
+  .quote-block:last-child{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+  .quote-meta div{ margin-bottom:6px; font-size:13.8px; line-height:1.5; }
+  .quote-meta b{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.03em; color:var(--accent); margin-right:5px; }
+
+  .fc-card{ border:1px solid var(--paper-line); border-radius:12px; background:#fff; padding:22px 18px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+  .fc-progress{ font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-bottom:12px; }
+  .fc-face{ font-family: var(--serif); font-size:17px; line-height:1.45; min-height:74px; display:flex; align-items:center; justify-content:center; cursor:pointer; padding:6px 8px; }
+  .fc-label{ font-family:var(--mono); font-size:10px; color: var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-top:8px; }
+  .fc-nav{ display:flex; justify-content:center; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .fc-nav button{ all:unset; font-family: var(--sans); font-size:13px; padding:8px 14px; border-radius:6px; border:1px solid var(--paper-line); background:#fff; cursor:pointer; }
+  .fc-nav button:hover{ background: color-mix(in srgb, var(--accent) 12%, white); }
+  button:focus-visible,.node.active:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 55%,white);outline-offset:3px;}
+
+
+  .note-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 2px}
+  .note-card{background:rgba(255,255,255,.72);border:1px solid var(--paper-line);border-radius:11px;padding:12px 13px;line-height:1.45;font-size:13.2px}
+  .note-card b{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:5px}
+  .exam-chain{display:flex;flex-direction:column;gap:7px;margin:10px 0}
+  .exam-chain div{padding:9px 11px;border-radius:9px;background:color-mix(in srgb,var(--accent) 8%,white);border-left:3px solid var(--accent);font-size:13.2px}
+  .exam-chain div:before{font-family:var(--mono);font-size:10px;color:var(--accent);margin-right:7px;font-weight:600}
+  .exam-chain div:nth-child(1):before{content:'1'} .exam-chain div:nth-child(2):before{content:'2'} .exam-chain div:nth-child(3):before{content:'3'} .exam-chain div:nth-child(4):before{content:'4'} .exam-chain div:nth-child(5):before{content:'5'}
+  .compare{width:100%;border-collapse:collapse;font-size:12.7px;margin:9px 0}
+  .compare th,.compare td{border:1px solid var(--paper-line);padding:9px;text-align:left;vertical-align:top}
+  .compare th{background:color-mix(in srgb,var(--accent) 10%,white);font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  .memory-line{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px dashed var(--paper-line);font-size:13.2px}
+  .memory-line:last-child{border-bottom:0}.memory-key{min-width:74px;font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase}
+  .mini-diagram{background:#fff;border:1px solid var(--paper-line);border-radius:9px;padding:10px;margin:9px 0 3px;overflow:auto}
+  .mini-diagram svg{display:block;max-width:100%;height:auto;margin:auto}
+  .caption-small{font-size:12px;color:var(--ink-dim);margin:5px 0 0;text-align:center}
+  .sticker{display:inline-block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:5px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,white);color:color-mix(in srgb,var(--accent) 72%,var(--ink));border:1px solid color-mix(in srgb,var(--accent) 25%,white);margin:0 5px 6px 0}
+  .topic-kicker{font-size:14px;line-height:1.55;color:var(--ink-dim);margin:-3px 0 16px}
+  .home-note{position:absolute;top:30px;left:24px;max-width:230px;z-index:2;font-family:var(--mono);font-size:10px;line-height:1.5;color:rgba(245,239,225,.55);transform:rotate(-2deg)}
+  .home-note strong{color:rgba(245,239,225,.82)}
+  @media(max-width:650px){.note-grid{grid-template-columns:1fr}.home-note{display:none}.page-title{font-size:31px}.page:after{display:none}}
+
+  @media (max-width:520px){
+    .page-title{ font-size:26px; }
+    .section{ padding:14px 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ===================== DATA ===================== */
+
+const SUBJECTS = [
+  { id:'englit',   name:'English Literature', board:'Edexcel', color:'var(--c-englit)',  active:true,  paper:'lines' },
+  { id:'englang',  name:'English Language',   board:'Edexcel', color:'var(--c-englang)', active:false, paper:'lines' },
+  { id:'maths',    name:'Maths',              board:'AQA',     color:'var(--c-maths)',   active:false, paper:'grid'  },
+  { id:'biology',  name:'Biology',            board:'AQA',     color:'var(--c-bio)',     active:true,  paper:'grid'  },
+  { id:'chemistry',name:'Chemistry',          board:'AQA',     color:'var(--c-chem)',    active:false, paper:'grid'  },
+  { id:'physics',  name:'Physics',            board:'AQA',     color:'var(--c-phys)',    active:false, paper:'grid'  },
+  { id:'french',   name:'French',             board:'AQA',     color:'var(--c-french)',  active:false, paper:'lines' },
+  { id:'dt',       name:'DT',                 board:'Edexcel', color:'var(--c-dt)',      active:false, paper:'grid'  },
+  { id:'business', name:'Business',           board:'Edexcel', color:'var(--c-business)',active:false, paper:'lines' },
+  { id:'cs',       name:'Computer Science',   board:'OCR J277',color:'var(--c-cs)',      active:false, paper:'grid'  },
+];
+
+function flowHTML(items){
+  return '<div class="flow">' + items.map(function(it,i){
+    return '<div class="flow-step">'+it+'</div>' + (i<items.length-1 ? '<div class="flow-arrow">&rarr;</div>' : '');
+  }).join('') + '</div>';
+}
+
+function tensionHTML(acts){
+  return '<div class="tension">' + acts.map(function(a){
+    return '<div class="tension-col"><div class="tension-bar" style="height:'+(a.level*16)+'px"></div><div class="tension-label">'+a.label+'</div></div>';
+  }).join('') + '</div>';
+}
+
+function quoteGroupsHTML(groups, note){
+  let html = '<div class="section"><h3>Essay paragraph ideas</h3>';
+  if(note) html += '<p style="font-size:13.5px;color:var(--ink-dim);margin-top:-4px;margin-bottom:16px">'+note+'</p>';
+  groups.forEach(function(g,i){
+    html += '<div class="quote-group"><div class="quote-group-title"><span class="num">'+(i+1)+'</span>'+g.theme+'</div>';
+    g.quotes.forEach(function(q){
+      html += '<div class="quote-block"><div class="quote">&ldquo;'+q.quote+'&rdquo;</div><div class="quote-meta">' +
+        '<div><b>Context</b>'+q.context+'</div>' +
+        '<div><b>Analysis</b>'+q.analysis+'</div>' +
+        '<div><b>Vocabulary</b>'+q.vocab+'</div>' +
+      '</div></div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+/* ---- Verified quote banks (checked against Gutenberg / Folger / widely-cited GCSE sources) ---- */
+
+const MACBETH_GROUPS = [
+  { theme:'Ambition', quotes:[
+    { quote:'Vaulting ambition, which o&#39;erleaps itself and falls on th&#39; other',
+      context:'Macbeth, Act 1 Scene 7 &mdash; alone, weighing up whether to kill Duncan.',
+      analysis:'The metaphor of &#39;vaulting&#39; (leaping) presents ambition as a physical force that overshoots its target and causes its own downfall &mdash; Shakespeare foreshadows Macbeth&#39;s collapse the moment he commits to it.',
+      vocab:'hubris, hamartia (tragic flaw), self-destructive, foreshadowing' },
+    { quote:'Stars, hide your fires; Let not light see my black and deep desires',
+      context:'Macbeth, Act 1 Scene 4 &mdash; an aside, just after Duncan names Malcolm his heir.',
+      analysis:'The imagery of light and dark establishes a moral pattern that runs through the play: Macbeth links his ambition to darkness because he already knows it is immoral.',
+      vocab:'aside, imagery, duplicity, moral corruption' }
+  ]},
+  { theme:'Guilt &amp; conscience', quotes:[
+    { quote:'Is this a dagger which I see before me, the handle toward my hand?',
+      context:'Macbeth, Act 2 Scene 1 &mdash; a hallucination immediately before he murders Duncan.',
+      analysis:'The rhetorical question shows Macbeth&#39;s mind fracturing under the weight of what he is about to do; the imagined dagger seems to &#39;lead&#39; him, blurring his own will with something driving him.',
+      vocab:'hallucination, psychological disintegration, rhetorical question, foreboding' },
+    { quote:'Out, damned spot! out, I say!',
+      context:'Lady Macbeth, Act 5 Scene 1 &mdash; sleepwalking, imagining she cannot wash blood from her hands.',
+      analysis:'The imperative commands show a once-controlling woman now powerless against her own subconscious; the imagined bloodstain symbolises guilt that cannot be removed.',
+      vocab:'symbolism, imperative, subconscious, irreversible guilt' }
+  ]},
+  { theme:'The supernatural', quotes:[
+    { quote:'Fair is foul, and foul is fair',
+      context:'The witches, Act 1 Scene 1 &mdash; the opening lines of the play.',
+      analysis:'The paradox introduces the play&#39;s central idea that appearances deceive; placed first, it warns the audience not to trust what looks good or evil at face value.',
+      vocab:'paradox, juxtaposition, motif, ambiguity' },
+    { quote:'By the pricking of my thumbs, something wicked this way comes',
+      context:'The witches, Act 4 Scene 1 &mdash; announcing Macbeth&#39;s arrival at their cave.',
+      analysis:'The witches sense evil physically before it appears, suggesting Macbeth himself has now become the source of &#39;wickedness&#39;, rather than merely being influenced by it.',
+      vocab:'personification, dramatic irony, transformation, omen' }
+  ]},
+  { theme:'Violence &amp; tyranny', quotes:[
+    { quote:'he unseam&#39;d him from the nave to the chaps',
+      context:'The Captain, Act 1 Scene 2 &mdash; describing Macbeth&#39;s brutal killing of the rebel Macdonwald in battle.',
+      analysis:'Macbeth&#39;s violence is first celebrated as heroic loyalty; Shakespeare shows the audience his capacity for extreme violence existed before the witches&#39; prophecy.',
+      vocab:'graphic imagery, foreshadowing, heroic violence, irony' },
+    { quote:'Will all great Neptune&#39;s ocean wash this blood clean from my hand?',
+      context:'Macbeth, Act 2 Scene 2 &mdash; immediately after murdering Duncan.',
+      analysis:'The hyperbolic image of an entire ocean being unable to cleanse his hands shows Macbeth instantly grasping the enormity of his crime, contrasting with Lady Macbeth&#39;s more practical response.',
+      vocab:'hyperbole, hubris, irreversibility, contrast' }
+  ]},
+  { theme:'Gender &amp; power', quotes:[
+    { quote:'unsex me here, and fill me from the crown to the toe top-full of direst cruelty',
+      context:'Lady Macbeth, Act 1 Scene 5 &mdash; praying to spirits after reading Macbeth&#39;s letter.',
+      analysis:'Lady Macbeth associates femininity with weakness, asking to be stripped of it entirely; this inverts Jacobean gender expectations and marks her as the play&#39;s most transgressive character.',
+      vocab:'subversion, gender norms, transgressive, invocation' },
+    { quote:'Screw your courage to the sticking-place, and we&#39;ll not fail',
+      context:'Lady Macbeth, Act 1 Scene 7 &mdash; pushing Macbeth to go through with the murder after he hesitates.',
+      analysis:'The metaphor (tightening a crossbow string to its firing point) shows Lady Macbeth manipulating Macbeth&#39;s sense of masculinity to override his moral doubts.',
+      vocab:'manipulation, metaphor, imperative, masculinity' }
+  ]},
+  { theme:'Appearance vs reality', quotes:[
+    { quote:'Look like th&#39; innocent flower, but be the serpent under&#39;t',
+      context:'Lady Macbeth, Act 1 Scene 5 &mdash; advising Macbeth on how to behave in front of Duncan.',
+      analysis:'The natural imagery of a flower concealing a serpent captures the play&#39;s obsession with concealment, and anticipates the deception Macbeth will practise throughout.',
+      vocab:'juxtaposition, natural imagery, deception, biblical allusion' },
+    { quote:'Out, out, brief candle!&hellip; a tale told by an idiot, full of sound and fury, signifying nothing',
+      context:'Macbeth, Act 5 Scene 5 &mdash; on hearing of Lady Macbeth&#39;s death, shortly before his own.',
+      analysis:'The candle metaphor for a brief, fragile life, followed by the claim that existence has no meaning, shows Macbeth&#39;s total moral and emotional collapse.',
+      vocab:'nihilism, metaphor, existential despair, anticlimax' }
+  ]},
+];
+
+const JEKYLL_GROUPS = [
+  { theme:'Duality of human nature', quotes:[
+    { quote:'Man is not truly one, but truly two',
+      context:'Dr Jekyll, Chapter 10 (&#39;Henry Jekyll&#39;s Full Statement of the Case&#39;) &mdash; his written confession, read after his death.',
+      analysis:'Jekyll states the novel&#39;s central thesis directly; the clinical, scientific tone frames a moral and spiritual problem as scientific fact.',
+      vocab:'duality, dichotomy, clinical tone, thesis statement' },
+    { quote:'I stood already committed to a profound duplicity of life',
+      context:'Dr Jekyll, Chapter 10 &mdash; describing his life before the experiment, hiding his &#39;undignified&#39; pleasures to protect his reputation.',
+      analysis:'Jekyll admits the duality existed long before Hyde did; the drug did not create his dark side, it only gave it separate physical form.',
+      vocab:'duplicity, repression, respectability, social commentary' }
+  ]},
+  { theme:'Reputation &amp; Victorian respectability', quotes:[
+    { quote:'I incline to Cain&#39;s heresy&hellip; I let my brother go to the devil in his own way',
+      context:'Mr Utterson, Chapter 1 &mdash; explaining his tolerant attitude towards other men&#39;s private failings.',
+      analysis:'The biblical allusion to Cain ironically foreshadows Utterson&#39;s own investigation into Jekyll&#39;s secrets; his tolerance is itself a form of Victorian restraint that avoids uncomfortable truths.',
+      vocab:'biblical allusion, foreshadowing, repression, restraint' },
+    { quote:'If he be Mr. Hyde, I shall be Mr. Seek.',
+      context:'Mr Utterson, Chapter 2 &mdash; resolving to discover the truth about Hyde after reading Jekyll&#39;s will.',
+      analysis:'The pun on &#39;hide and seek&#39; lightens the tone briefly but also marks Utterson&#39;s role as the novel&#39;s detective figure, driving its Gothic mystery structure.',
+      vocab:'wordplay, detective fiction, Gothic mystery' }
+  ]},
+  { theme:'Hyde&#39;s unnatural, animalistic presence', quotes:[
+    { quote:'There is something wrong with his appearance; something displeasing, something down-right detestable.',
+      context:'Mr Enfield, Chapter 1 &mdash; describing Hyde after watching him trample a child.',
+      analysis:'Enfield cannot rationally explain his disgust, suggesting Hyde&#39;s evil is felt instinctively rather than through any single visible deformity.',
+      vocab:'the uncanny, visceral reaction, ambiguity, indefinable' },
+    { quote:'with ape-like fury, he was trampling his victim under foot',
+      context:'Chapter 4 (&#39;The Carew Murder Case&#39;) &mdash; an eyewitness account of Hyde killing Sir Danvers Carew.',
+      analysis:'The simile &#39;ape-like&#39; strips Hyde of humanity, reflecting Victorian anxieties (following Darwin) about the beast lurking beneath civilised man.',
+      vocab:'simile, dehumanisation, Darwinian anxiety, degeneration' }
+  ]},
+  { theme:'Setting: London as a Gothic backdrop', quotes:[
+    { quote:'A great chocolate-coloured pall lowered over heaven',
+      context:'Chapter 4 &mdash; the fog over London on the morning Utterson goes to identify Hyde&#39;s address.',
+      analysis:'The funereal image of a &#39;pall&#39; (a cloth draped over a coffin) turns the fog into a symbol of death and moral corruption hanging over the whole city.',
+      vocab:'pathetic fallacy, symbolism, Gothic setting, foreboding' },
+    { quote:'like a district of some city in a nightmare',
+      context:'Chapter 4 &mdash; Utterson&#39;s impression of Soho as the cab approaches Hyde&#39;s house.',
+      analysis:'Comparing London to a nightmare blurs the real and the psychological, suggesting the city reflects the dual, hidden nature of its respectable inhabitants.',
+      vocab:'Gothic imagery, psychogeography, urban decay' }
+  ]},
+  { theme:'Science, religion &amp; the burden of morality', quotes:[
+    { quote:'the doom and burthen of our life is bound for ever on man&#39;s shoulders',
+      context:'Dr Jekyll, Chapter 10 &mdash; reflecting on why he abandoned trying to fully explain the science of his transformation.',
+      analysis:'The near-biblical, weighty language frames morality as an inescapable duty rather than a scientific problem, suggesting Jekyll&#39;s experiment was always doomed.',
+      vocab:'moral burden, biblical register, hubris, inevitability' },
+    { quote:'The most racking pangs succeeded: a grinding in the bones',
+      context:'Dr Jekyll, Chapter 10 &mdash; describing the physical agony of his first transformation into Hyde.',
+      analysis:'The visceral, physical suffering suggests that unleashing one&#39;s suppressed evil side comes at a real cost &mdash; nature resists the unnatural split of good and evil.',
+      vocab:'visceral, body horror, unnatural, physical suffering' }
+  ]},
+  { theme:'Structure: mystery, violence &amp; revelation', quotes:[
+    { quote:'trampled calmly over the child&#39;s body',
+      context:'Chapter 1 &mdash; the very first thing we learn about Hyde, recounted by Enfield.',
+      analysis:'The adverb &#39;calmly&#39; is deeply unsettling &mdash; an act of extreme violence performed without emotion establishes Hyde&#39;s total lack of conscience from his first appearance.',
+      vocab:'adverb, understatement, characterisation, in medias res' },
+    { quote:'like a man restored from death&hellip; there stood Henry Jekyll',
+      context:'Dr Lanyon&#39;s narrative, Chapter 9 &mdash; Lanyon watches Hyde transform back into Jekyll before his eyes.',
+      analysis:'This central revelation is delayed until near the end through Stevenson&#39;s fragmented, multi-narrator structure, building suspense through documents and testimony.',
+      vocab:'narrative structure, epistolary technique, dramatic revelation, suspense' }
+  ]},
+];
+
+const INSPECTOR_GROUPS = [
+  { theme:'Capitalism &amp; class (Mr Birling&#39;s worldview)', quotes:[
+    { quote:'unsinkable, absolutely unsinkable',
+      context:'Mr Birling, Act 1 &mdash; boasting about the Titanic while lecturing Gerald and Eric.',
+      analysis:'Priestley&#39;s 1945 audience knew the Titanic sank days later; this dramatic irony instantly undermines Birling&#39;s authority and casts doubt on his other confident opinions.',
+      vocab:'dramatic irony, hubris, foreshadowing, unreliable authority' },
+    { quote:'a man has to mind his own business and look after himself and his own',
+      context:'Mr Birling, Act 1 &mdash; part of a longer speech dismissing community responsibility as &#39;nonsense&#39;.',
+      analysis:'The repetition of &#39;his own&#39; emphasises Birling&#39;s narrow self-interest, set up early so the Inspector&#39;s opposing message lands with maximum contrast later.',
+      vocab:'individualism, capitalist ideology, repetition, juxtaposition' }
+  ]},
+  { theme:'Generational divide (Sheila&#39;s transformation)', quotes:[
+    { quote:'But these girls aren&#39;t cheap labour &mdash; they&#39;re people.',
+      context:'Sheila, Act 1 &mdash; responding to her father&#39;s dismissive attitude towards the women he employs.',
+      analysis:'Even before the Inspector interrogates her, Sheila shows more empathy than her father, marking her as the character most capable of change.',
+      vocab:'characterisation, foil, empathy, social conscience' },
+    { quote:'I&#39;ll never, never do it again.',
+      context:'Sheila, later in the play &mdash; after learning her jealous complaint got Eva Smith dismissed from her job.',
+      analysis:'The repeated &#39;never&#39; and simple sentence contrast with her parents&#39; evasive language elsewhere, showing genuine remorse rather than fear of consequences.',
+      vocab:'repetition, sincerity, contrast, moral growth' }
+  ]},
+  { theme:'Social responsibility (the Inspector&#39;s message)', quotes:[
+    { quote:'We are members of one body. We are responsible for each other.',
+      context:'Inspector Goole, Act 3 &mdash; part of his final speech to the family before he leaves.',
+      analysis:'The biblical-sounding metaphor of a single &#39;body&#39; presents society as interconnected, directly opposing Birling&#39;s Act 1 claim that a man should only look after himself.',
+      vocab:'metaphor, biblical register, socialism, interconnectedness' },
+    { quote:'millions and millions of Eva Smiths and John Smiths',
+      context:'Inspector Goole, Act 3 &mdash; reminding the family that Eva represents countless other working-class people.',
+      analysis:'The deliberately generic names and repetition of &#39;millions&#39; universalise Eva&#39;s suffering, turning one death into a symbol of systemic inequality.',
+      vocab:'universalisation, symbolism, repetition, social critique' }
+  ]},
+  { theme:'Consequences &amp; dramatic warning', quotes:[
+    { quote:'they will be taught it in fire and blood and anguish',
+      context:'Inspector Goole, Act 3 &mdash; the final line of his closing speech.',
+      analysis:'Written in 1945 but set in 1912, this line carries dramatic irony for Priestley&#39;s post-war audience, who would read it as a prophecy of the two World Wars that followed.',
+      vocab:'dramatic irony, prophecy, historical context, tricolon' },
+    { quote:'Nobody wants war.',
+      context:'Mr Birling, Act 1 &mdash; dismissing any suggestion that war might be coming.',
+      analysis:'Coming from a self-declared &#39;practical man of business&#39;, this confident prediction is catastrophically wrong within two years of the play&#39;s 1912 setting.',
+      vocab:'dramatic irony, complacency, historical context, verbal irony' }
+  ]},
+];
+
+const TOPICS = {
+
+  biology: [
+    { id:'cellbio', name:'Cell Biology',
+      flashcards:[
+        {q:'What is the difference between eukaryotic and prokaryotic cells?', a:'Eukaryotic cells (animal/plant) have a nucleus. Prokaryotic cells (bacteria) have no nucleus — DNA is a single loop, sometimes with plasmids.'},
+        {q:'What is differentiation?', a:'The process by which a cell changes to become specialised for its job.'},
+        {q:'What is diffusion?', a:'The net movement of particles from an area of higher concentration to an area of lower concentration.'},
+        {q:'What is the magnification formula?', a:'Magnification = image size ÷ actual size.'},
+        {q:'Give an example of a specialised cell and its adaptation.', a:'A root hair cell has a large surface area for absorbing water and minerals.'},
+        {q:'What can stem cells be used to treat?', a:'Conditions like diabetes and paralysis, by differentiating into needed cell types.'},
+        {q:'How is a prokaryotic cell\u2019s DNA arranged?', a:'As a single loop, sometimes with additional small rings called plasmids.'},
+        {q:'How is a sperm cell adapted to its function?', a:'It has a tail (flagellum) for movement, helping it swim to the egg.'},
+        {q:'What technique prevents contamination when culturing microorganisms?', a:'Aseptic technique — sterilising equipment, flaming loops, and sealing lids.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 1</div>\
+      <h1 class="page-title">Cell Biology</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Eukaryotic cell</b> &mdash; a complex cell with a nucleus (animal and plant cells).</div>\
+        <div class="def"><b>Prokaryotic cell</b> &mdash; a simpler, smaller cell with no nucleus (bacteria); DNA floats free as a single loop, sometimes with plasmids.</div>\
+        <div class="def"><b>Differentiation</b> &mdash; the process by which a cell changes to become specialised for its job.</div>\
+        <div class="def"><b>Diffusion</b> &mdash; the net movement of particles from an area of higher concentration to an area of lower concentration.</div>\
+      </div>\
+      <div class="section"><h3>Diagram: animal vs plant cell</h3>\
+        <div class="diagram-box">\
+          <svg width="320" height="150" viewBox="0 0 320 150">\
+            <circle cx="80" cy="75" r="60" fill="none" stroke="#2A2A28" stroke-width="1.5"/>\
+            <circle cx="95" cy="75" r="16" fill="#4C9A5D" opacity="0.3"/>\
+            <ellipse cx="60" cy="95" rx="18" ry="9" fill="#4C9A5D" opacity="0.18"/>\
+            <text x="80" y="140" text-anchor="middle" font-size="11" font-family="IBM Plex Sans">Animal cell</text>\
+            <text x="95" y="79" text-anchor="middle" font-size="8" font-family="IBM Plex Sans">nucleus</text>\
+            <rect x="180" y="20" width="120" height="110" fill="none" stroke="#2A2A28" stroke-width="1.5"/>\
+            <rect x="185" y="25" width="110" height="100" fill="none" stroke="#2A2A28" stroke-width="0.7"/>\
+            <circle cx="240" cy="60" r="13" fill="#4C9A5D" opacity="0.3"/>\
+            <rect x="222" y="82" width="36" height="34" fill="#4C9A5D" opacity="0.15"/>\
+            <text x="240" y="140" text-anchor="middle" font-size="11" font-family="IBM Plex Sans">Plant cell</text>\
+            <text x="240" y="64" text-anchor="middle" font-size="7" font-family="IBM Plex Sans">nucleus</text>\
+            <text x="240" y="100" text-anchor="middle" font-size="7" font-family="IBM Plex Sans">vacuole</text>\
+          </svg>\
+        </div>\
+        <p class="diagram-caption">Plant cells have extra: cell wall, permanent vacuole, chloroplasts. Both have: nucleus, cytoplasm, cell membrane, mitochondria, ribosomes.</p>\
+      </div>\
+      <div class="section"><h3>Must-know facts</h3>\
+        <ul>\
+          <li>Magnification = image size &divide; actual size. Learn to rearrange this triangle, and convert between mm, &micro;m and nm.</li>\
+          <li>Stem cells (embryonic and adult) can differentiate into different cell types &mdash; used in treating conditions like diabetes and paralysis.</li>\
+          <li>Specialised cells: sperm cell (tail for movement), root hair cell (large surface area), nerve cell (long, branched), muscle cell (contains proteins that contract).</li>\
+          <li>Chromosomes are found in the nucleus and carry genetic information as DNA.</li>\
+          <li>Culturing microorganisms: aseptic technique (sterilised equipment, flamed loops, sealed lids) prevents contamination.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Practice magnification calculations with standard form &mdash; AQA loves catching students out on unit conversion (mm &rarr; &micro;m).</div>\
+    '},
+    { id:'organisation', name:'Organisation',
+      flashcards:[
+        {q:'What does amylase do?', a:'Breaks down starch into sugars.'},
+        {q:'What does protease do?', a:'Breaks down protein into amino acids.'},
+        {q:'What does lipase do?', a:'Breaks down lipids into fatty acids and glycerol.'},
+        {q:'What is the role of bile?', a:'Neutralises stomach acid and emulsifies fats to increase surface area for lipase.'},
+        {q:'What is the order of blood flow through the heart, starting at the vena cava?', a:'Vena cava → right atrium → right ventricle → pulmonary artery → lungs → pulmonary vein → left atrium → left ventricle → aorta.'},
+        {q:'How are capillaries adapted for exchange?', a:'Walls are one cell thick, giving a short diffusion distance.'},
+        {q:'What is coronary heart disease?', a:'Arteries narrow due to fatty deposits, restricting blood flow; treated with stents or statins.'},
+        {q:'How are arteries adapted for their function?', a:'Thick, muscular, elastic walls that withstand high pressure.'},
+        {q:'How are veins adapted for their function?', a:'They contain valves to prevent the backflow of blood at low pressure.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 2</div>\
+      <h1 class="page-title">Organisation</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Tissue</b> &mdash; a group of similar cells working together to perform a shared function.</div>\
+        <div class="def"><b>Organ</b> &mdash; a group of different tissues working together.</div>\
+        <div class="def"><b>Enzyme</b> &mdash; a biological catalyst (protein) that speeds up a specific reaction without being used up.</div>\
+        <div class="def"><b>Bile</b> &mdash; neutralises stomach acid and emulsifies fats to increase surface area for lipase.</div>\
+      </div>\
+      <div class="section"><h3>Digestive enzymes</h3>\
+        <ul>\
+          <li>Amylase (mouth/small intestine): starch &rarr; sugars</li>\
+          <li>Protease (stomach/small intestine): protein &rarr; amino acids</li>\
+          <li>Lipase (small intestine): lipids &rarr; fatty acids + glycerol</li>\
+          <li>The "lock and key" model explains enzyme specificity &mdash; substrate fits the enzyme&#39;s active site.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Blood flow through the heart</h3>\
+        ' + flowHTML(['Vena cava','Right atrium','Right ventricle','Pulmonary artery','Lungs','Pulmonary vein','Left atrium','Left ventricle','Aorta']) + '\
+        <p class="diagram-caption">Deoxygenated blood picks up oxygen at the lungs, then returns oxygenated to be pumped around the body.</p>\
+      </div>\
+      <div class="section"><h3>Must-know facts</h3>\
+        <ul>\
+          <li>Double circulatory system: one loop to the lungs, one loop around the body.</li>\
+          <li>Arteries: thick muscular walls, carry blood at high pressure away from the heart.</li>\
+          <li>Veins: contain valves, carry blood back to the heart at low pressure.</li>\
+          <li>Coronary heart disease: arteries narrow with fatty deposits; stents or statins are used to treat it.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Required practical: use a Benedict&#39;s/iodine test to identify sugars/starch in food, and know how to test the effect of pH on amylase activity.</div>\
+    '},
+    { id:'infection', name:'Infection & Response',
+      flashcards:[
+        {q:'What is a pathogen?', a:'A microorganism that causes disease.'},
+        {q:'How does vaccination work?', a:'A small, harmless dose of a dead/inactive pathogen triggers white blood cells to produce antibodies, giving future protection.'},
+        {q:'Why don\u2019t antibiotics work on viruses?', a:'Antibiotics disrupt bacterial cell processes; viruses reproduce inside host cells, so there is no bacterial process to target.'},
+        {q:'Name the pathogen type that causes malaria and how it spreads.', a:'A protist, spread by mosquitoes acting as a vector.'},
+        {q:'Name two of the body\u2019s non-specific defences against pathogens.', a:'e.g. skin (physical barrier) and stomach acid (kills pathogens).'},
+        {q:'Name a disease caused by a virus, a bacterium, and a protist.', a:'Measles (virus), Salmonella (bacteria), Malaria (protist).'},
+        {q:'What are the three stages of drug testing?', a:'Lab testing on cells/tissue, then animal testing, then human clinical trials.'},
+        {q:'What is a double-blind trial?', a:'Neither the doctor nor the patient knows who received the real drug or the placebo, which reduces bias.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 3</div>\
+      <h1 class="page-title">Infection &amp; Response</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Pathogen</b> &mdash; a microorganism that causes disease (bacteria, virus, fungus, protist).</div>\
+        <div class="def"><b>Vaccination</b> &mdash; introducing a small, harmless dose of a dead/inactive pathogen to trigger white blood cells to produce antibodies.</div>\
+        <div class="def"><b>Antibiotic</b> &mdash; a medicine that kills bacteria (does not work on viruses).</div>\
+      </div>\
+      <div class="section"><h3>The body&#39;s lines of defence</h3>\
+        ' + flowHTML(['Skin (barrier)','Nose hair &amp; mucus','Stomach acid','White blood cells']) + '\
+      </div>\
+      <div class="section"><h3>Must-know examples</h3>\
+        <ul>\
+          <li>Measles (virus): red skin rash, spread by droplets in the air.</li>\
+          <li>Salmonella (bacteria): food poisoning, spread by contaminated food.</li>\
+          <li>Malaria (protist): spread by mosquitoes (a vector).</li>\
+          <li>HIV (virus): attacks the immune system, spread by bodily fluids.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>How the immune system responds</h3>\
+        <ul>\
+          <li>White blood cells engulf pathogens (phagocytosis), produce antibodies specific to the antigen, and produce antitoxins.</li>\
+          <li>Memory lymphocytes stay in the blood after infection &mdash; a faster response next time means immunity.</li>\
+          <li>New drugs are tested in three stages: in the lab on cells/tissue, then animals, then human clinical trials (using a placebo and double-blind method).</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Be ready to explain why antibiotics don&#39;t work on viral infections, and how double-blind trials with a placebo remove bias from drug testing.</div>\
+    '},
+    { id:'bioenergetics', name:'Bioenergetics',
+      flashcards:[
+        {q:'What is the word equation for photosynthesis?', a:'Carbon dioxide + water → (light energy) → glucose + oxygen.'},
+        {q:'What is the symbol equation for photosynthesis?', a:'6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂ (using light energy).'},
+        {q:'What is the word equation for aerobic respiration?', a:'Glucose + oxygen → carbon dioxide + water (+ energy).'},
+        {q:'What is the symbol equation for aerobic respiration?', a:'C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O.'},
+        {q:'What is the word equation for anaerobic respiration in humans?', a:'Glucose → lactic acid (+ energy, much less than aerobic).'},
+        {q:'Name the three limiting factors of photosynthesis.', a:'Light intensity, carbon dioxide concentration, and temperature.'},
+        {q:'What happens to respiration during vigorous exercise?', a:'The body switches to anaerobic respiration, building up an oxygen debt.'},
+        {q:'What is metabolism?', a:'The sum of all the chemical reactions in a cell or the body.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 4</div>\
+      <h1 class="page-title">Bioenergetics</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key equations (learn both word and symbol forms)</h3>\
+        <div class="def"><b>Photosynthesis (word):</b> carbon dioxide + water &rarr; (light energy) &rarr; glucose + oxygen</div>\
+        <div class="def"><b>Photosynthesis (symbol):</b> 6CO&#8322; + 6H&#8322;O &rarr; C&#8326;H&#8321;&#8322;O&#8326; + 6O&#8322;</div>\
+        <div class="def"><b>Aerobic respiration (word):</b> glucose + oxygen &rarr; carbon dioxide + water (+ energy)</div>\
+        <div class="def"><b>Aerobic respiration (symbol):</b> C&#8326;H&#8321;&#8322;O&#8326; + 6O&#8322; &rarr; 6CO&#8322; + 6H&#8322;O</div>\
+        <div class="def"><b>Anaerobic respiration in humans (word):</b> glucose &rarr; lactic acid (+ energy)</div>\
+      </div>\
+      <div class="section"><h3>Diagram: rate of photosynthesis</h3>\
+        <div class="diagram-box">\
+          <svg width="280" height="140" viewBox="0 0 280 140">\
+            <line x1="30" y1="10" x2="30" y2="120" stroke="#2A2A28" stroke-width="1"/>\
+            <line x1="30" y1="120" x2="260" y2="120" stroke="#2A2A28" stroke-width="1"/>\
+            <path d="M30,120 C 90,110 130,40 260,35" fill="none" stroke="#4C9A5D" stroke-width="2"/>\
+            <text x="10" y="65" font-size="10" font-family="IBM Plex Sans" transform="rotate(-90 10 65)">Rate</text>\
+            <text x="140" y="135" font-size="10" font-family="IBM Plex Sans" text-anchor="middle">Light intensity</text>\
+          </svg>\
+        </div>\
+        <p class="diagram-caption">The curve rises then plateaus &mdash; a limiting factor (CO&#8322;, temperature, or light) is capping the rate.</p>\
+      </div>\
+      <div class="section"><h3>Must-know facts</h3>\
+        <ul>\
+          <li>Limiting factors of photosynthesis: light intensity, carbon dioxide concentration, temperature.</li>\
+          <li>During vigorous exercise the body switches to anaerobic respiration, building an "oxygen debt" that must be repaid afterwards.</li>\
+          <li>Metabolism is the sum of all the chemical reactions in a cell or the body, many of which are linked to respiration.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Inverse square law questions (light intensity vs distance from a lamp) come up almost every year &mdash; practice the formula.</div>\
+    '},
+    { id:'homeostasis', name:'Homeostasis & Response',
+      flashcards:[
+        {q:'What is homeostasis?', a:'The regulation of internal conditions to maintain optimum conditions for function, in response to internal and external changes.'},
+        {q:'What hormone lowers blood glucose, and where is it released from?', a:'Insulin, released from the pancreas.'},
+        {q:'What hormone raises blood glucose?', a:'Glucagon.'},
+        {q:'What is the order of the reflex arc?', a:'Stimulus → receptor → sensory neurone → relay neurone → motor neurone → effector.'},
+        {q:'What is the difference between type 1 and type 2 diabetes?', a:'Type 1 — the pancreas produces little/no insulin. Type 2 — body cells no longer respond properly to insulin.'},
+        {q:'What is negative feedback?', a:'A system that reverses a change, bringing a level back to normal.'},
+        {q:'How are type 1 and type 2 diabetes treated differently?', a:'Type 1 with insulin injections; type 2 with diet, exercise, and sometimes medication.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 5</div>\
+      <h1 class="page-title">Homeostasis &amp; Response</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Homeostasis</b> &mdash; the regulation of internal conditions to maintain optimum conditions for function, in response to internal and external changes.</div>\
+        <div class="def"><b>Negative feedback</b> &mdash; a system that reverses a change, bringing a level back to normal.</div>\
+        <div class="def"><b>Hormone</b> &mdash; a chemical messenger, released into the blood by a gland, that travels to a target organ.</div>\
+      </div>\
+      <div class="section"><h3>The reflex arc</h3>\
+        ' + flowHTML(['Stimulus','Receptor','Sensory neurone','Relay neurone','Motor neurone','Effector']) + '\
+        <p class="diagram-caption">Reflexes are fast and involuntary &mdash; they bypass conscious brain processing.</p>\
+      </div>\
+      <div class="section"><h3>Blood glucose control</h3>\
+        <ul>\
+          <li>Too high &rarr; pancreas releases insulin &rarr; glucose moves into cells / liver converts glucose to glycogen.</li>\
+          <li>Too low &rarr; pancreas releases glucagon &rarr; glycogen converted back to glucose.</li>\
+          <li>Type 1 diabetes: treated with insulin injections. Type 2 diabetes: linked to obesity, managed with diet and exercise.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Practice labelling and explaining the reflex arc &mdash; it&#39;s a very common 4&ndash;6 mark question.</div>\
+    '},
+    { id:'inheritance', name:'Inheritance, Variation & Evolution',
+      flashcards:[
+        {q:'How many chromosomes are in a human body cell?', a:'23 pairs (46 total).'},
+        {q:'How many chromosomes are in a human gamete?', a:'23 (half the normal number).'},
+        {q:'What determines biological sex in humans?', a:'The 23rd chromosome pair — XX is female, XY is male.'},
+        {q:'What is a dominant allele?', a:'An allele that is expressed even if only one copy is present.'},
+        {q:'What did Darwin propose?', a:'Evolution by natural selection.'},
+        {q:'What is the difference between selective breeding and genetic engineering?', a:'Selective breeding chooses parents with desired traits over generations; genetic engineering directly transfers genes between organisms.'},
+        {q:'Why is fossil evidence for evolution considered incomplete?', a:'Fossils are rare, and many organisms decayed before they could fossilise.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 6</div>\
+      <h1 class="page-title">Inheritance, Variation &amp; Evolution</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Gamete</b> &mdash; a sex cell (egg or sperm); each contains half the number of chromosomes of a normal body cell.</div>\
+        <div class="def"><b>Allele</b> &mdash; a version of a gene.</div>\
+        <div class="def"><b>Dominant / recessive</b> &mdash; a dominant allele is expressed even with one copy; a recessive allele is only expressed if both copies are recessive.</div>\
+        <div class="def"><b>Natural selection</b> &mdash; organisms with characteristics best suited to their environment are more likely to survive and reproduce, passing on their genes.</div>\
+      </div>\
+      <div class="section"><h3>Diagram: Punnett square (Bb &times; Bb)</h3>\
+        <table class="punnett">\
+          <tr><th></th><th>B</th><th>b</th></tr>\
+          <tr><th>B</th><td>BB</td><td>Bb</td></tr>\
+          <tr><th>b</th><td>Bb</td><td>bb</td></tr>\
+        </table>\
+        <p class="diagram-caption">Two heterozygous (Bb) parents give a 3:1 ratio of dominant to recessive phenotype in offspring.</p>\
+      </div>\
+      <div class="section"><h3>Must-know facts</h3>\
+        <ul>\
+          <li>Human body cells have 23 pairs of chromosomes (46 total); sex is determined by the 23rd pair.</li>\
+          <li>Show your Punnett square working &mdash; genotype ratios (e.g. 3:1) and phenotype outcomes are usually asked together.</li>\
+          <li>Selective breeding (humans choose parents with desired traits) vs genetic engineering (genes are directly transferred) &mdash; know the ethical issues linked to each.</li>\
+          <li>Fossils provide evidence for evolution, but are rare, so evidence is incomplete.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Show your Punnett square working &mdash; marks are usually awarded for the method, not just the final ratio.</div>\
+    '},
+    { id:'ecology', name:'Ecology',
+      flashcards:[
+        {q:'What is a biotic factor?', a:'A living factor affecting an ecosystem, e.g. predators or food availability.'},
+        {q:'What is an abiotic factor?', a:'A non-living factor, e.g. temperature or light intensity.'},
+        {q:'Roughly what percentage of energy transfers to the next trophic level?', a:'Around 10%.'},
+        {q:'Name two human impacts on biodiversity.', a:'e.g. deforestation and pollution.'},
+        {q:'Name two processes that return carbon dioxide to the atmosphere.', a:'Respiration and combustion (also decomposition).'},
+        {q:'What role do producers play in a pyramid of biomass?', a:'They form the base with the greatest biomass, capturing energy directly from sunlight.'},
+        {q:'Name two ways humans try to maintain biodiversity.', a:'Breeding programmes and protected areas/reforestation.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">Biology &middot; AQA &middot; Topic 7</div>\
+      <h1 class="page-title">Ecology</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Key definitions</h3>\
+        <div class="def"><b>Community</b> &mdash; all the populations of different species living in a habitat.</div>\
+        <div class="def"><b>Biotic factor</b> &mdash; a living factor affecting an ecosystem (e.g. predators, food, disease).</div>\
+        <div class="def"><b>Abiotic factor</b> &mdash; a non-living factor (e.g. temperature, light, pH, moisture).</div>\
+      </div>\
+      <div class="section"><h3>Diagram: pyramid of biomass</h3>\
+        <div class="diagram-box">\
+          <svg width="200" height="130" viewBox="0 0 200 130">\
+            <polygon points="90,10 110,10 130,40 70,40" fill="#4C9A5D" opacity="0.7"/>\
+            <polygon points="70,40 130,40 150,75 50,75" fill="#4C9A5D" opacity="0.5"/>\
+            <polygon points="50,75 150,75 175,115 25,115" fill="#4C9A5D" opacity="0.3"/>\
+            <text x="100" y="25" font-size="9" text-anchor="middle" font-family="IBM Plex Sans">tertiary</text>\
+            <text x="100" y="60" font-size="9" text-anchor="middle" font-family="IBM Plex Sans">secondary</text>\
+            <text x="100" y="98" font-size="9" text-anchor="middle" font-family="IBM Plex Sans">producers</text>\
+          </svg>\
+        </div>\
+      </div>\
+      <div class="section"><h3>Must-know facts</h3>\
+        <ul>\
+          <li>Energy is lost between trophic levels (movement, heat, waste) &mdash; usually only around 10% transfers to the next level.</li>\
+          <li>Carbon cycle: photosynthesis removes CO&#8322;; respiration, combustion, and decomposition return it to the atmosphere.</li>\
+          <li>Human impacts on biodiversity: deforestation, land use, global warming, pollution (air, water, land).</li>\
+          <li>Biodiversity can be maintained through breeding programmes, protected areas, and reforestation.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Be ready to calculate percentage change/efficiency of energy transfer between trophic levels.</div>\
+    '},
+  ],
+
+  englit: [
+    { id:'macbeth', name:'Macbeth',
+      flashcards:[
+        {q:'In what year was Macbeth written, and who was king at the time?', a:'c.1606, during the reign of James I.'},
+        {q:'What does "fair is foul, and foul is fair" introduce?', a:'The theme of appearance vs reality that runs through the play.'},
+        {q:'How does Shakespeare present Macbeth\u2019s guilt?', a:'Through hallucinations, such as the floating dagger and Banquo\u2019s ghost.'},
+        {q:'What role do the witches play in the plot?', a:'They plant the idea of kingship in Macbeth\u2019s mind, acting as a catalyst — but his choices remain his own.'},
+        {q:'How does Lady Macbeth\u2019s guilt show itself later in the play?', a:'Through sleepwalking and hallucinating blood on her hands ("Out, damned spot!").'},
+        {q:'What does Macbeth compare his ambition to when he calls it "vaulting"?', a:'A leap or vault that overshoots its landing and causes a fall — ambition that destroys itself.'},
+        {q:'What does Lady Macbeth ask the spirits to do to her in Act 1 Scene 5?', a:'To "unsex" her and fill her with cruelty, stripping away traits she sees as weak and feminine.'},
+        {q:'What does the Captain\u2019s description of Macbeth in Act 1 Scene 2 foreshadow?', a:'His capacity for extreme, brutal violence, later turned against Duncan and others.'},
+        {q:'What does Macbeth conclude about life in his "brief candle" speech?', a:'That life is brief and meaningless — "a tale told by an idiot, signifying nothing."'},
+        {q:'What image does Lady Macbeth use for deceptive appearances in Act 1 Scene 5?', a:'"Look like th\u2019 innocent flower, but be the serpent under\u2019t."'},
+        {q:'What does the witches\u2019 line "by the pricking of my thumbs" signal?', a:'That something wicked (Macbeth) is approaching.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">English Literature &middot; Edexcel &middot; Shakespeare</div>\
+      <h1 class="page-title">Macbeth</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Context</h3>\
+        <ul>\
+          <li>Written c.1606, during the reign of James I, who believed strongly in the Divine Right of Kings and had a personal interest in witchcraft.</li>\
+          <li>A Jacobean audience would see regicide (killing a king) as a crime against God and the natural order &mdash; reflected in the play&#39;s imagery of chaos in nature.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Structure: tension across the play</h3>\
+        ' + tensionHTML([{label:'Act 1',level:2},{label:'Act 2',level:4},{label:'Act 3',level:5},{label:'Act 4',level:4},{label:'Act 5',level:5}]) + '\
+        <p class="diagram-caption">Tension spikes at the murder of Duncan (Act 2), dips briefly, then climbs again through Banquo&#39;s murder and Macbeth&#39;s unravelling to the final battle.</p>\
+      </div>\
+      <div class="section"><h3>Key themes</h3>\
+        <ul>\
+          <li><b>Ambition</b> &mdash; unchecked ambition destroys Macbeth; it&#39;s presented as a corrupting force.</li>\
+          <li><b>Guilt</b> &mdash; shown through hallucinations and Lady Macbeth&#39;s sleepwalking.</li>\
+          <li><b>The supernatural</b> &mdash; the witches act as a catalyst, but Macbeth&#39;s choices are still his own.</li>\
+          <li><b>Appearance vs reality</b> &mdash; "fair is foul, and foul is fair" runs through the whole play.</li>\
+          <li><b>Kingship and order</b> &mdash; Duncan and Malcolm represent rightful rule; Macbeth represents tyranny and disorder.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Key characters</h3>\
+        <ul>\
+          <li><b>Macbeth</b> &mdash; brave soldier who becomes a tyrant; his internal conflict drives the tragedy.</li>\
+          <li><b>Lady Macbeth</b> &mdash; ambitious and initially the driving force; her guilt eventually overwhelms her.</li>\
+          <li><b>Banquo</b> &mdash; a foil to Macbeth; also given a prophecy but does not act on it.</li>\
+          <li><b>The witches</b> &mdash; ambiguous supernatural figures who plant the idea of kingship.</li>\
+          <li><b>Macduff</b> &mdash; ultimately kills Macbeth; represents loyalty and justice restored.</li>\
+        </ul>\
+      </div>\
+      ' + quoteGroupsHTML(MACBETH_GROUPS, 'Each group below can form one paragraph of an 8-paragraph essay (intro + 6 themed paragraphs + conclusion) &mdash; two quotes each, with context, analysis and useful vocabulary built in.') + '\
+      <div class="tip"><b>Exam tip</b>Edexcel asks an extract-based question &mdash; always link the extract back to the play as a whole, and comment on Shakespeare&#39;s dramatic methods, not just plot.</div>\
+    '},
+    { id:'jekyllhyde', name:'Jekyll and Hyde',
+      flashcards:[
+        {q:'Who wrote Jekyll and Hyde, and when?', a:'Robert Louis Stevenson, 1886.'},
+        {q:'What central idea does Jekyll\u2019s confession "Man is not truly one, but truly two" state?', a:'The duality of human nature — that everyone has a good and an evil side.'},
+        {q:'What Victorian anxiety does the novel reflect?', a:'Fear of regression to a primitive, animalistic state, linked to Darwin\u2019s theory of evolution.'},
+        {q:'How is Hyde physically described?', a:'Small, ape-like, and instinctively repulsive to everyone who meets him.'},
+        {q:'What theme does Mr Utterson\u2019s character represent?', a:'Victorian reputation and restraint — investigating the mystery rationally.'},
+        {q:'What does Jekyll mean by "a profound duplicity of life"?', a:'That he had been living two lives — respectable in public, indulging hidden pleasures in private — even before creating Hyde.'},
+        {q:'What pun does Utterson make about finding Hyde?', a:'"If he be Mr. Hyde, I shall be Mr. Seek" — a play on hide-and-seek.'},
+        {q:'How is the murder of Sir Danvers Carew described?', a:'Hyde attacked him "with ape-like fury", trampling him underfoot.'},
+        {q:'What does the fog symbolise in Chapter 4?', a:'Moral corruption and concealment hanging over London, described as "a great chocolate-coloured pall".'},
+        {q:'What physical sensation does Jekyll describe during his first transformation?', a:'"The most racking pangs... a grinding in the bones."'},
+        {q:'How does the novel\u2019s structure build suspense?', a:'Through multiple narrators and documents (Utterson\u2019s investigation, Lanyon\u2019s narrative, Jekyll\u2019s confession), delaying the truth until the end.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">English Literature &middot; Edexcel &middot; 19th-century novel</div>\
+      <h1 class="page-title">Dr Jekyll and Mr Hyde</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Context</h3>\
+        <ul>\
+          <li>Written by Robert Louis Stevenson in 1886, during the Victorian era &mdash; a time obsessed with respectability and reputation.</li>\
+          <li>Influenced by Darwin&#39;s theory of evolution and fears about regression to a more primitive, "beast-like" human state.</li>\
+          <li>Reflects the idea of duality &mdash; that every person has a civilised and a savage side.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Structure: tension across the novel</h3>\
+        ' + tensionHTML([{label:'Ch 1-2',level:2},{label:'Ch 3-5',level:3},{label:'Ch 6-8',level:4},{label:'Ch 9',level:4},{label:'Ch 10',level:5}]) + '\
+        <p class="diagram-caption">Tension builds gradually as evidence mounts, peaking at Jekyll&#39;s final confession which reveals the truth.</p>\
+      </div>\
+      <div class="section"><h3>Key themes</h3>\
+        <ul>\
+          <li><b>Duality of human nature</b> &mdash; Jekyll and Hyde represent the "good" and "evil" sides of one man.</li>\
+          <li><b>Reputation</b> &mdash; Victorian gentlemen are obsessed with maintaining a respectable public image.</li>\
+          <li><b>Science vs the supernatural</b> &mdash; Jekyll&#39;s experiment is framed scientifically, but its results feel supernatural/horrifying.</li>\
+          <li><b>The city</b> &mdash; London&#39;s fog and hidden streets mirror the novel&#39;s themes of concealment.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Key characters</h3>\
+        <ul>\
+          <li><b>Dr Jekyll</b> &mdash; respectable scientist who wants to separate his good and evil impulses.</li>\
+          <li><b>Mr Hyde</b> &mdash; the physical embodiment of Jekyll&#39;s darker side; described as small, ape-like, and instinctively repulsive.</li>\
+          <li><b>Mr Utterson</b> &mdash; the rational lawyer through whom the mystery is investigated; represents Victorian restraint.</li>\
+        </ul>\
+      </div>\
+      ' + quoteGroupsHTML(JEKYLL_GROUPS, 'Each group below can form one paragraph of an 8-paragraph essay (intro + 6 themed paragraphs + conclusion) &mdash; two quotes each, with context, analysis and useful vocabulary built in. All quotes here are checked directly against the original 1886 text.') + '\
+      <div class="tip"><b>Exam tip</b>Examiners reward comparisons between the novel&#39;s structure (told through multiple narrators/documents) and how that builds mystery &mdash; don&#39;t just retell the plot.</div>\
+    '},
+    { id:'inspectorcalls', name:'An Inspector Calls',
+      flashcards:[
+        {q:'Who wrote An Inspector Calls, and in what year was it written vs set?', a:'J.B. Priestley, written in 1945 but set in 1912.'},
+        {q:'What is the Inspector\u2019s core message?', a:'That everyone is responsible for one another in society.'},
+        {q:'Which two characters show the clearest change in attitude by the end of the play?', a:'Sheila and Eric Birling.'},
+        {q:'What dramatic device does Priestley use with the Titanic and WWI references?', a:'Dramatic irony — the audience knows what the Birlings confidently dismiss will actually happen.'},
+        {q:'What does Eva Smith represent in the play?', a:'The working class harmed by the selfishness of the upper class.'},
+        {q:'What does Mr Birling confidently say about the Titanic?', a:'That it is "unsinkable, absolutely unsinkable" — proven wrong days later.'},
+        {q:'What does Sheila say in response to her father calling the workers cheap labour?', a:'"But these girls aren\u2019t cheap labour — they\u2019re people."'},
+        {q:'What metaphor does the Inspector use for society\u2019s interconnectedness?', a:'"We are members of one body. We are responsible for each other."'},
+        {q:'What does the Inspector warn will happen if people don\u2019t learn his lesson?', a:'"They will be taught it in fire and blood and anguish."'}
+      ],
+      html: '\
+      <div class="page-eyebrow">English Literature &middot; Edexcel &middot; Modern text</div>\
+      <h1 class="page-title">An Inspector Calls</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>Context</h3>\
+        <ul>\
+          <li>Written by J.B. Priestley in 1945, but set in 1912 &mdash; Priestley deliberately uses dramatic irony, since the audience knows about WWI and the Titanic&#39;s sinking, which the Birlings confidently dismiss.</li>\
+          <li>Priestley was a socialist; the play is a critique of capitalism and upper-class complacency, written just after WWII when Britain was voting in a Labour government and building the welfare state.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Structure: tension across the play</h3>\
+        ' + tensionHTML([{label:'Act 1',level:2},{label:'Mid Act 2',level:4},{label:'End Act 2',level:5},{label:'Act 3',level:5}]) + '\
+        <p class="diagram-caption">Tension rises steadily as each character&#39;s connection to Eva Smith is revealed, spiking with Mrs Birling&#39;s testimony and the final twist.</p>\
+      </div>\
+      <div class="section"><h3>Key themes</h3>\
+        <ul>\
+          <li><b>Social responsibility</b> &mdash; the Inspector&#39;s core message is that we are all responsible for one another.</li>\
+          <li><b>Class and privilege</b> &mdash; the Birlings&#39; wealth insulates them from consequences, until the Inspector arrives.</li>\
+          <li><b>Generational divide</b> &mdash; Sheila and Eric are willing to change and accept blame; Mr and Mrs Birling refuse to.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Key characters</h3>\
+        <ul>\
+          <li><b>Inspector Goole</b> &mdash; a mysterious, almost supernatural figure who exposes each character&#39;s role in Eva Smith&#39;s death.</li>\
+          <li><b>Mr Birling</b> &mdash; a wealthy, self-important factory owner obsessed with status and profit.</li>\
+          <li><b>Sheila Birling</b> &mdash; undergoes the clearest transformation, becoming self-aware and socially conscious by the end.</li>\
+          <li><b>Eva Smith / Daisy Renton</b> &mdash; never appears on stage, but represents the working class harmed by the other characters.</li>\
+        </ul>\
+      </div>\
+      ' + quoteGroupsHTML(INSPECTOR_GROUPS, 'Because this is a modern, copyrighted play, quotes here are kept short and to well-known lines. Use these 4 groups as a strong core, and add 2 more paragraph ideas of your own from class notes or your anthology to build a full 8-paragraph essay.') + '\
+      <div class="tip"><b>Exam tip</b>Structure your essay around how a character changes (or refuses to) across the play &mdash; this maps directly onto Priestley&#39;s message about responsibility.</div>\
+    '},
+    { id:'poetryanth', name:'Poetry Anthology',
+      flashcards:[
+        {q:'What is a volta?', a:'A turn or shift in the argument/tone of a poem.'},
+        {q:'What is enjambment?', a:'When a sentence or phrase runs on from one line to the next without punctuation.'},
+        {q:'What is caesura?', a:'A pause in the middle of a line of poetry, often marked by punctuation.'},
+        {q:'Name one useful connective for contrasting two poems.', a:'e.g. "whereas" or "in contrast".'},
+        {q:'What should a poetry comparison cover beyond content?', a:'How each poet uses form, structure and language to present their ideas.'},
+        {q:'Name a structural feature you might comment on in a poem.', a:'e.g. stanza length, rhyme scheme, or a volta.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">English Literature &middot; Edexcel &middot; Poetry</div>\
+      <h1 class="page-title">Poetry Anthology</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>What this involves</h3>\
+        <ul>\
+          <li>You&#39;ll be given one poem printed on the paper and asked to compare it with another poem from your studied anthology cluster.</li>\
+          <li>The comparison should cover both content/themes AND how each poet uses form, structure, and language to present them.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Useful comparison connectives</h3>\
+        <ul>\
+          <li>Similarly / In the same way / Both poets&hellip;</li>\
+          <li>In contrast / Whereas / On the other hand&hellip;</li>\
+          <li>This mirrors / echoes the idea of&hellip;</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>Terminology checklist</h3>\
+        <ul>\
+          <li>Structure: stanza length, enjambment, caesura, volta (turn in argument), rhyme scheme.</li>\
+          <li>Language: metaphor, simile, personification, semantic field, juxtaposition.</li>\
+          <li>Form: sonnet, free verse, dramatic monologue, ballad.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Plan a simple comparison grid (theme / language / structure / effect) for 5 minutes before writing &mdash; it keeps your comparison balanced rather than describing one poem, then the other.</div>\
+    '},
+    { id:'unseenpoetry', name:'Unseen Poetry',
+      flashcards:[
+        {q:'What is the first thing you should do when given an unseen poem?', a:'Read the whole poem once for overall meaning before annotating.'},
+        {q:'What effect can an end-stopped line create?', a:'A sense of finality or completion.'},
+        {q:'What effect can enjambment create?', a:'Momentum, flow, or urgency.'},
+        {q:'What should you focus your analysis on, rather than guessing the poet\u2019s intentions?', a:'The effect the words create on the reader.'},
+        {q:'Why should you read an unseen poem fully before annotating?', a:'To understand its overall meaning and tone before focusing on individual details.'},
+        {q:'Give one way form can mirror meaning.', a:'e.g. short, fragmented lines can create tension or urgency.'}
+      ],
+      html: '\
+      <div class="page-eyebrow">English Literature &middot; Edexcel &middot; Poetry</div>\
+      <h1 class="page-title">Unseen Poetry</h1>\
+      <div class="title-rule"></div>\
+      <div class="section"><h3>What this involves</h3>\
+        <ul>\
+          <li>You&#39;ll analyse a poem you&#39;ve never seen before &mdash; no context or memorised quotes needed, just close reading skill.</li>\
+          <li>Usually followed by a second, shorter unseen poem to briefly compare.</li>\
+        </ul>\
+      </div>\
+      <div class="section"><h3>A reliable reading method</h3>\
+        ' + flowHTML(['Read fully once','Identify tone','Pick 3-4 key images','Check structure']) + '\
+      </div>\
+      <div class="section"><h3>Common exam-worthy techniques</h3>\
+        <ul>\
+          <li>Enjambment can create momentum or urgency; end-stopped lines can create finality.</li>\
+          <li>A shift in tense or tone often signals a turning point (volta) in the poem&#39;s argument.</li>\
+        </ul>\
+      </div>\
+      <div class="tip"><b>Exam tip</b>Never guess what the poet "meant to feel". Write about the effect the words create on the reader &mdash; that&#39;s what&#39;s actually assessable.</div>\
+    '},
+  ],
+};
+
+
+const TOPIC_EXTRAS = {
+  cellbio: `
+    <div class="section"><h3>Cell structures — what to actually say</h3>
+      <table class="compare"><tr><th>Structure</th><th>Function</th><th>Exam link</th></tr>
+      <tr><td>Nucleus</td><td>Contains genetic material and controls cell activities.</td><td>Found in eukaryotic cells.</td></tr>
+      <tr><td>Mitochondria</td><td>Site of aerobic respiration.</td><td>More are useful in cells with high energy demand.</td></tr>
+      <tr><td>Ribosomes</td><td>Site of protein synthesis.</td><td>Present in both eukaryotic and prokaryotic cells.</td></tr>
+      <tr><td>Cell membrane</td><td>Controls movement of substances into and out of the cell.</td><td>Partially/selectively permeable.</td></tr>
+      <tr><td>Chloroplast</td><td>Site of photosynthesis.</td><td>Contains chlorophyll to absorb light.</td></tr></table>
+    </div>
+    <div class="section"><h3>Magnification — method</h3>
+      <div class="exam-chain"><div>Write the formula: magnification = image size ÷ actual size.</div><div>Make both measurements the same unit before calculating.</div><div>Substitute the values carefully, then give the answer with sensible significant figures.</div></div>
+      <div class="tip"><b>Common trap</b>1 mm = 1000 µm. A smaller unit has a larger numerical value.</div>
+    </div>
+    <div class="section"><h3>Required practical thinking</h3>
+      <div class="note-grid"><div class="note-card"><b>Independent</b>What you deliberately change.</div><div class="note-card"><b>Dependent</b>What you measure.</div><div class="note-card"><b>Control</b>What you keep the same.</div><div class="note-card"><b>Reliability</b>Repeat measurements and look for anomalous results.</div></div>
+    </div>`,
+  organisation: `
+    <div class="section"><h3>Enzymes — the chain to remember</h3>
+      <div class="exam-chain"><div>Enzyme has a specific active site.</div><div>Substrate has a complementary shape.</div><div>Substrate binds to the active site.</div><div>Reaction occurs and products leave.</div><div>Active site is unchanged, so the enzyme can be reused.</div></div>
+      <div class="mini-diagram"><svg width="520" height="150" viewBox="0 0 520 150"><rect x="22" y="38" width="120" height="70" rx="12" fill="#eef4ee" stroke="#4C9A5D"/><path d="M142 73 H205" stroke="#555"/><path d="M195 66 l12 7 -12 7" fill="none" stroke="#555"/><rect x="210" y="28" width="120" height="90" rx="16" fill="#f7f0e5" stroke="#777"/><path d="M330 73 H392" stroke="#555"/><path d="M382 66 l12 7 -12 7" fill="none" stroke="#555"/><rect x="397" y="38" width="100" height="70" rx="12" fill="#eef4ee" stroke="#4C9A5D"/><text x="82" y="69" text-anchor="middle" font-size="12">enzyme</text><text x="82" y="88" text-anchor="middle" font-size="11">active site</text><text x="270" y="70" text-anchor="middle" font-size="12">enzyme + substrate</text><text x="270" y="89" text-anchor="middle" font-size="11">reaction</text><text x="447" y="70" text-anchor="middle" font-size="12">products</text></svg><p class="caption-small">Specific active site → substrate binds → products released.</p></div>
+    </div>
+    <div class="section"><h3>Heart — high-mark details</h3>
+      <div class="note-grid"><div class="note-card"><b>Valves</b>Prevent backflow.</div><div class="note-card"><b>Septum</b>Prevents oxygenated and deoxygenated blood mixing.</div><div class="note-card"><b>Left ventricle</b>Thick muscle because it pumps blood around the whole body.</div><div class="note-card"><b>Pulmonary artery</b>Carries deoxygenated blood away from the heart.</div></div>
+    </div>`,
+  infection: `
+    <div class="section"><h3>Pathogen → disease → transmission</h3>
+      <table class="compare"><tr><th>Pathogen</th><th>Example</th><th>Transmission / key point</th></tr><tr><td>Virus</td><td>Measles</td><td>Airborne droplets; vaccination helps prevent spread.</td></tr><tr><td>Bacterium</td><td>Salmonella</td><td>Contaminated food; bacteria can produce toxins.</td></tr><tr><td>Protist</td><td>Malaria</td><td>Spread by mosquito vectors.</td></tr><tr><td>Fungus</td><td>Rose black spot</td><td>Can spread between plants; reduces photosynthesis by damaging leaves.</td></tr></table>
+    </div>
+    <div class="section"><h3>Vaccination — why immunity improves</h3>
+      <div class="exam-chain"><div>Dead/inactive pathogen or its antigens are introduced.</div><div>Lymphocytes recognise the antigen and make specific antibodies.</div><div>Memory cells remain.</div><div>On later infection, the secondary response is faster and larger.</div><div>Antibody levels rise quickly, helping destroy the pathogen before serious illness develops.</div></div>
+      <div class="mini-diagram"><svg width="520" height="125" viewBox="0 0 520 125"><path d="M45 95 C100 95 120 25 180 25 C235 25 245 95 300 95 C355 95 370 25 430 25 C460 25 480 45 490 55" fill="none" stroke="#4C9A5D" stroke-width="3"/><line x1="40" y1="100" x2="495" y2="100" stroke="#777"/><text x="95" y="118" font-size="11">first exposure</text><text x="360" y="118" font-size="11">second exposure</text><text x="190" y="18" font-size="11">primary response</text><text x="405" y="18" font-size="11">faster secondary response</text></svg><p class="caption-small">The second response is quicker because memory cells remain.</p></div>
+    </div>
+    <div class="section"><h3>Drug trials — why each stage exists</h3><div class="note-grid"><div class="note-card"><b>Lab</b>Check toxicity and whether the drug appears effective.</div><div class="note-card"><b>Animals</b>Check safety and biological effects before human testing.</div><div class="note-card"><b>Clinical</b>Test dose, effectiveness and side effects in humans.</div><div class="note-card"><b>Double blind</b>Reduces bias because neither patient nor doctor knows who receives placebo/real drug.</div></div></div>`,
+  bioenergetics: `
+    <div class="section"><h3>Photosynthesis — limiting factors</h3>
+      <div class="note-grid"><div class="note-card"><b>Low light</b>Light is limiting → increasing light increases rate.</div><div class="note-card"><b>Low CO₂</b>Carbon dioxide becomes limiting → rate plateaus.</div><div class="note-card"><b>Temperature</b>Enzymes control reactions → rate rises to an optimum, then falls if enzymes denature.</div><div class="note-card"><b>Plateau</b>Another factor has become limiting.</div></div>
+    </div>
+    <div class="section"><h3>Respiration comparison</h3><table class="compare"><tr><th></th><th>Aerobic</th><th>Anaerobic in humans</th></tr><tr><td>Oxygen</td><td>Required</td><td>Not required</td></tr><tr><td>Products</td><td>CO₂ + water</td><td>Lactic acid</td></tr><tr><td>Energy</td><td>More released</td><td>Much less released</td></tr><tr><td>Exercise</td><td>Normal supply of oxygen</td><td>Used when oxygen supply cannot meet demand</td></tr></table></div>
+    <div class="section"><h3>Graph skills</h3><div class="exam-chain"><div>Identify the axes and units.</div><div>Describe the overall pattern before quoting numbers.</div><div>Use data values to support the description.</div><div>Explain the biology using the limiting factor or enzyme idea.</div></div><div class="tip"><b>Common trap</b>Do not say the plant has “run out of” a limiting factor unless the data support that. Usually say the factor limits the rate.</div></div>`,
+  homeostasis: `
+    <div class="section"><h3>Negative feedback loop</h3><div class="mini-diagram"><svg width="560" height="150" viewBox="0 0 560 150"><rect x="18" y="48" width="110" height="48" rx="10" fill="#f7f0e5" stroke="#777"/><rect x="162" y="48" width="110" height="48" rx="10" fill="#eef4ee" stroke="#4C9A5D"/><rect x="306" y="48" width="110" height="48" rx="10" fill="#f7f0e5" stroke="#777"/><rect x="450" y="48" width="92" height="48" rx="10" fill="#eef4ee" stroke="#4C9A5D"/><text x="73" y="77" text-anchor="middle" font-size="11">change</text><text x="217" y="77" text-anchor="middle" font-size="11">receptor</text><text x="361" y="77" text-anchor="middle" font-size="11">control centre</text><text x="496" y="77" text-anchor="middle" font-size="11">effector</text><path d="M128 72h30m114 0h30m114 0h30" stroke="#555"/><path d="M150 65l9 7-9 7m144-14 9 7-9 7m144-14 9 7-9 7" fill="none" stroke="#555"/></svg><p class="caption-small">The response opposes the original change and returns the condition towards the normal level.</p></div></div>
+    <div class="section"><h3>Blood glucose — exam chain</h3><div class="exam-chain"><div>Blood glucose rises after a meal.</div><div>Pancreas releases insulin.</div><div>Cells take up more glucose; liver stores glucose as glycogen.</div><div>Blood glucose falls back towards the normal level.</div></div><div class="exam-chain"><div>Blood glucose falls below the normal level.</div><div>Pancreas releases glucagon.</div><div>Glycogen is converted into glucose.</div><div>Blood glucose rises towards the normal level.</div></div></div>
+    <div class="section"><h3>Temperature control</h3><div class="note-grid"><div class="note-card"><b>Too hot</b>Sweating increases; vasodilation increases blood flow near the skin.</div><div class="note-card"><b>Too cold</b>Vasoconstriction reduces heat loss; shivering generates heat.</div></div></div>`,
+  inheritance: `
+    <div class="section"><h3>Genetic vocabulary ladder</h3><div class="memory-line"><span class="memory-key">DNA</span>Genetic material made from two strands forming a double helix.</div><div class="memory-line"><span class="memory-key">Gene</span>A section of DNA that codes for a particular sequence of amino acids.</div><div class="memory-line"><span class="memory-key">Allele</span>A version of a gene.</div><div class="memory-line"><span class="memory-key">Genotype</span>The combination of alleles an organism has.</div><div class="memory-line"><span class="memory-key">Phenotype</span>The observable characteristics produced by genotype and environment.</div></div>
+    <div class="section"><h3>Punnett square method</h3><div class="exam-chain"><div>Write the parental genotypes.</div><div>Work out the possible gametes.</div><div>Put gametes around the square.</div><div>Combine alleles in each box.</div><div>State genotype and phenotype ratios clearly.</div></div></div>
+    <div class="section"><h3>Natural selection — five-step explanation</h3><div class="exam-chain"><div>There is genetic variation within a population.</div><div>An environmental change creates a selection pressure.</div><div>Individuals with advantageous characteristics are more likely to survive.</div><div>They reproduce and pass on the alleles responsible.</div><div>Over many generations the advantageous allele becomes more common.</div></div></div>`,
+  ecology: `
+    <div class="section"><h3>Energy transfer</h3><div class="exam-chain"><div>Energy enters most ecosystems through producers capturing light energy.</div><div>Energy is transferred through feeding.</div><div>Much energy is lost through respiration, movement, heat, waste and uneaten material.</div><div>Less biomass/energy is therefore available at higher trophic levels.</div></div></div>
+    <div class="section"><h3>Carbon cycle — the big picture</h3><div class="mini-diagram"><svg width="560" height="180" viewBox="0 0 560 180"><ellipse cx="280" cy="32" rx="90" ry="22" fill="#eef4ee" stroke="#4C9A5D"/><rect x="25" y="120" width="120" height="38" rx="10" fill="#f7f0e5" stroke="#777"/><rect x="220" y="120" width="120" height="38" rx="10" fill="#f7f0e5" stroke="#777"/><rect x="415" y="120" width="120" height="38" rx="10" fill="#f7f0e5" stroke="#777"/><text x="280" y="36" text-anchor="middle" font-size="12">atmospheric CO₂</text><text x="85" y="144" text-anchor="middle" font-size="11">plants</text><text x="280" y="144" text-anchor="middle" font-size="11">animals</text><text x="475" y="144" text-anchor="middle" font-size="11">decomposers</text><path d="M220 47 L110 117M280 54V116M340 47L450 117M145 128L215 128M345 128L410 128" stroke="#555" fill="none"/><text x="155" y="80" font-size="10">photosynthesis</text><text x="287" y="88" font-size="10">feeding</text><text x="392" y="80" font-size="10">death / decay</text></svg><p class="caption-small">Photosynthesis removes CO₂; respiration, decomposition and combustion return it.</p></div></div>
+    <div class="section"><h3>Fieldwork checklist</h3><div class="note-grid"><div class="note-card"><b>Quadrat</b>Samples plants or slow-moving organisms.</div><div class="note-card"><b>Transect</b>Shows how distribution changes along a line or environmental gradient.</div><div class="note-card"><b>Repeat</b>Improves reliability and helps identify anomalies.</div><div class="note-card"><b>Random sampling</b>Reduces selection bias.</div></div></div>`,
+  macbeth: `
+    <div class="section"><h3>Macbeth’s character arc</h3><div class="mini-diagram"><svg width="560" height="190" viewBox="0 0 560 190"><path d="M35 145 C105 130 145 70 205 75 C270 80 285 35 345 48 C405 61 410 112 455 130 C490 144 515 125 535 95" fill="none" stroke="#C6558D" stroke-width="4"/><line x1="30" y1="150" x2="540" y2="150" stroke="#777"/><text x="65" y="170" font-size="10">brave soldier</text><text x="185" y="170" font-size="10">ambition</text><text x="300" y="170" font-size="10">king / tyrant</text><text x="425" y="170" font-size="10">isolation</text><text x="505" y="170" font-size="10">collapse</text><text x="14" y="32" font-size="10" transform="rotate(-90 14 32)">moral state</text></svg><p class="caption-small">A useful essay argument: Shakespeare makes Macbeth’s downfall feel increasingly self-created as he chooses violence without needing further persuasion.</p></div></div>
+    <div class="section"><h3>Jacobean context that actually earns marks</h3><div class="note-grid"><div class="note-card"><b>Divine Right</b>Kings were seen as appointed by God, so regicide challenged the natural and religious order.</div><div class="note-card"><b>James I</b>Had a strong interest in kingship and witchcraft, making the supernatural especially resonant.</div><div class="note-card"><b>Gender</b>Lady Macbeth challenges expectations, but the play also associates disorder with her rejection of conventional femininity.</div><div class="note-card"><b>Great Chain of Being</b>Breaking the social/natural hierarchy can be linked to the chaos after Duncan’s murder.</div></div></div>
+    <div class="section"><h3>Essay paragraph formula</h3><div class="exam-chain"><div>Point — answer the exact wording of the question.</div><div>Evidence — choose a short, precise quotation.</div><div>Method — identify the writer’s language/form/structure choice.</div><div>Analysis — zoom in on a key word and explain its effect.</div><div>Whole-play/context link — show how the idea develops or connects to Shakespeare’s wider message.</div></div></div>`,
+  jekyllhyde: `
+    <div class="section"><h3>Jekyll → Hyde: transformation of the idea</h3><div class="mini-diagram"><svg width="560" height="175" viewBox="0 0 560 175"><rect x="30" y="55" width="125" height="65" rx="12" fill="#eef4ee" stroke="#4C9A5D"/><rect x="215" y="55" width="125" height="65" rx="12" fill="#f7f0e5" stroke="#777"/><rect x="400" y="55" width="125" height="65" rx="12" fill="#eee9f7" stroke="#7A5FB5"/><text x="92" y="82" text-anchor="middle" font-size="12">respectable Jekyll</text><text x="92" y="101" text-anchor="middle" font-size="10">repression</text><text x="277" y="82" text-anchor="middle" font-size="12">experiment</text><text x="277" y="101" text-anchor="middle" font-size="10">attempted separation</text><text x="462" y="82" text-anchor="middle" font-size="12">Hyde</text><text x="462" y="101" text-anchor="middle" font-size="10">unrestrained impulses</text><path d="M155 88h50m135 0h50" stroke="#555"/><path d="M195 81l10 7-10 7m135-14 10 7-10 7" fill="none" stroke="#555"/></svg><p class="caption-small">A strong argument: Stevenson suggests Hyde is not a separate evil created from nowhere; he exposes desires Jekyll had already repressed.</p></div></div>
+    <div class="section"><h3>Victorian ideas to connect to</h3><div class="note-grid"><div class="note-card"><b>Respectability</b>Public reputation could matter enormously to middle/upper-class men.</div><div class="note-card"><b>Darwin</b>Evolution encouraged debate about humanity’s relationship with animals and fears of regression.</div><div class="note-card"><b>Gothic</b>Fog, darkness, secrecy and unexplained horror create uncertainty.</div><div class="note-card"><b>Science</b>Jekyll’s experiment raises questions about whether scientific progress should have moral limits.</div></div></div>
+    <div class="section"><h3>Structure: why the delayed revelation matters</h3><div class="exam-chain"><div>Utterson investigates Hyde without knowing the truth.</div><div>Clues accumulate through different witnesses and documents.</div><div>Lanyon’s account provides the shocking transformation.</div><div>Jekyll’s confession finally explains the mystery.</div><div>The reader is forced to reinterpret earlier events after the revelation.</div></div></div>`,
+  inspectorcalls: `
+    <div class="section"><h3>Responsibility web</h3><div class="mini-diagram"><svg width="560" height="220" viewBox="0 0 560 220"><circle cx="280" cy="110" r="45" fill="#f7f0e5" stroke="#777" stroke-width="2"/><text x="280" y="106" text-anchor="middle" font-size="11">Eva Smith</text><text x="280" y="121" text-anchor="middle" font-size="10">/ Daisy Renton</text><circle cx="85" cy="45" r="34" fill="#eee8f2" stroke="#7A5FB5"/><circle cx="475" cy="45" r="34" fill="#eee8f2" stroke="#7A5FB5"/><circle cx="85" cy="175" r="34" fill="#eee8f2" stroke="#7A5FB5"/><circle cx="475" cy="175" r="34" fill="#eee8f2" stroke="#7A5FB5"/><text x="85" y="49" text-anchor="middle" font-size="10">Birling</text><text x="475" y="49" text-anchor="middle" font-size="10">Sheila</text><text x="85" y="179" text-anchor="middle" font-size="10">Eric</text><text x="475" y="179" text-anchor="middle" font-size="10">Mrs Birling</text><path d="M112 57L245 97M448 57L315 97M112 163L245 123M448 163L315 123" stroke="#888"/><text x="280" y="18" text-anchor="middle" font-size="10">each character contributes to the chain of events</text></svg><p class="caption-small">The Inspector turns a single death into a wider argument about how society treats vulnerable people.</p></div></div>
+    <div class="section"><h3>1945 audience vs 1912 setting</h3><table class="compare"><tr><th>1912 world</th><th>1945 audience</th><th>Why Priestley uses it</th></tr><tr><td>Class hierarchy and limited social safety nets.</td><td>Audience has lived through two world wars and social change.</td><td>Creates dramatic irony and encourages the audience to question whether society should change.</td></tr><tr><td>Birling confidently trusts business and individualism.</td><td>Audience knows his predictions are wrong.</td><td>Undermines his authority before the Inspector even arrives.</td></tr></table></div>
+    <div class="section"><h3>Character-change comparison</h3><div class="note-grid"><div class="note-card"><b>Sheila</b>Accepts responsibility and learns from the Inspector.</div><div class="note-card"><b>Eric</b>Admits wrongdoing and develops a social conscience.</div><div class="note-card"><b>Mr Birling</b>More concerned with reputation and consequences for himself.</div><div class="note-card"><b>Mrs Birling</b>Refuses to accept responsibility and judges others harshly.</div></div></div>`,
+  poetryanth: `
+    <div class="section"><h3>Poetry comparison — what examiners want to see</h3><div class="exam-chain"><div>Make a clear argument about the shared theme or idea.</div><div>Use a short quotation from poem A and analyse a method.</div><div>Link the method to meaning and effect.</div><div>Use a connective to compare directly with poem B.</div><div>Explain how the second poet’s method is similar, different, or develops the idea.</div></div></div>
+    <div class="section"><h3>Comparison sentence builders</h3><div class="memory-line"><span class="memory-key">similar</span>Both poets present …, but they differ in …</div><div class="memory-line"><span class="memory-key">contrast</span>Whereas poet A uses …, poet B instead …</div><div class="memory-line"><span class="memory-key">structure</span>The shift from … to … mirrors …</div><div class="memory-line"><span class="memory-key">effect</span>This makes the reader/viewer see … as …</div></div>`,
+  unseenpoetry: `
+    <div class="section"><h3>Unseen poetry annotation map</h3><div class="mini-diagram"><svg width="560" height="200" viewBox="0 0 560 200"><circle cx="280" cy="100" r="42" fill="#f7f0e5" stroke="#777"/><text x="280" y="104" text-anchor="middle" font-size="12">central idea</text><circle cx="100" cy="45" r="32" fill="#eee8f2" stroke="#7A5FB5"/><circle cx="460" cy="45" r="32" fill="#eef4ee" stroke="#4C9A5D"/><circle cx="100" cy="155" r="32" fill="#f7f0e5" stroke="#777"/><circle cx="460" cy="155" r="32" fill="#f6e9ef" stroke="#C6558D"/><text x="100" y="49" text-anchor="middle" font-size="10">language</text><text x="460" y="49" text-anchor="middle" font-size="10">structure</text><text x="100" y="159" text-anchor="middle" font-size="10">tone</text><text x="460" y="159" text-anchor="middle" font-size="10">form</text><path d="M128 54L245 87M432 54L315 87M128 146L245 113M432 146L315 113" stroke="#888"/></svg><p class="caption-small">Start with meaning, then build evidence from language, structure, tone and form.</p></div></div>
+    <div class="section"><h3>Five-minute plan</h3><div class="exam-chain"><div>Read once: what is literally happening?</div><div>Read again: what is the speaker’s tone?</div><div>Circle 3–4 striking words/images.</div><div>Look for a shift, contrast or structural pattern.</div><div>Choose your strongest three pieces of evidence and build a clear argument.</div></div></div>`
+};
+
+/* ===================== STATE + ROUTER ===================== */
+
+let state = { view:'home', subjectId:null, topicId:null };
+let fc = { cards:[], order:[], pos:0, revealed:false };
+
+function go(view, subjectId, topicId){
+  state = { view, subjectId: subjectId||null, topicId: topicId||null };
+  render();
+  window.scrollTo({top:0, behavior:'instant'});
+}
+
+/* ===================== LABEL WRAPPING ===================== */
+
+function wrapLabel(text, maxChars){
+  const words = text.replace(/,/g,'').split(' ');
+  const lines = [];
+  let current = '';
+  words.forEach(function(w){
+    const test = (current ? current+' ' : '') + w;
+    if(test.length <= maxChars || !current){
+      current = test;
+    } else {
+      lines.push(current);
+      current = w;
+    }
+  });
+  if(current) lines.push(current);
+  if(lines.length > 3){
+    const merged = lines.slice(2).join(' ');
+    return lines.slice(0,2).concat([merged]);
+  }
+  return lines;
+}
+
+/* ===================== MIND MAP RENDERER ===================== */
+
+function renderMindMap(centerLabel, centerSub, nodes){
+  const W=780,H=780,cx=W/2,cy=H/2,rBranch=275,n=nodes.length;
+  const hex=function(r){
+    let pts=[]; for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;pts.push((Math.cos(a)*r).toFixed(1)+','+(Math.sin(a)*r).toFixed(1));} return pts.join(' ');
+  };
+  let svg='<svg class="map" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Interactive revision map">';
+  svg+='<defs>'+
+    '<radialGradient id="coreGrad"><stop offset="0" stop-color="#b8ffff" stop-opacity=".98"/><stop offset=".35" stop-color="#3fdad7" stop-opacity=".94"/><stop offset="1" stop-color="#126e91" stop-opacity=".92"/></radialGradient>'+
+    '<filter id="glow"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'+
+    '<filter id="softGlow"><feGaussianBlur stdDeviation="12"/></filter></defs>';
+  // orbital rings give the map the constellation/planetarium feel from the reference
+  [92,170,275,355].forEach(function(r,i){svg+='<circle class="orbit '+(i%2?'faint':'')+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'"/>';});
+  // small orbit ticks / stars
+  for(let i=0;i<28;i++){const a=i/28*Math.PI*2;const rr=355+(i%3)*6;const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);svg+='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(i%4===0?1.5:.8)+'" fill="rgba(190,225,255,.55)"/>';}
+  nodes.forEach(function(node,i){
+    const angle=i/n*2*Math.PI-Math.PI/2;
+    const nx=cx+rBranch*Math.cos(angle),ny=cy+rBranch*Math.sin(angle);
+    const mx=cx+rBranch*.5*Math.cos(angle)+24*Math.cos(angle+1.1);
+    const my=cy+rBranch*.5*Math.sin(angle)+24*Math.sin(angle+1.1);
+    svg+='<path class="branch" style="animation-delay:'+(i*.18)+'s" d="M'+cx+','+cy+' Q'+mx+','+my+' '+nx+','+ny+'"/>';
+  });
+  svg+='<circle class="center-halo" cx="'+cx+'" cy="'+cy+'" r="78"/><circle class="center-halo" cx="'+cx+'" cy="'+cy+'" r="102" style="animation-delay:1.2s"/>';
+  svg+='<circle class="center-circle" cx="'+cx+'" cy="'+cy+'" r="62"/>';
+  const centerLines=wrapLabel(centerLabel,12), cFont=centerLines.length>1?17:21;
+  svg+='<text class="center-label" x="'+cx+'" y="'+(cy-(centerLines.length-1)*9)+'" style="font-size:'+cFont+'px">';
+  centerLines.forEach(function(w,i){svg+='<tspan x="'+cx+'" dy="'+(i===0?0:20)+'">'+w+'</tspan>';});
+  svg+='</text>';
+  if(centerSub) svg+='<text class="center-sub" x="'+cx+'" y="'+(cy+39+(centerLines.length-1)*9)+'">'+centerSub+'</text>';
+  nodes.forEach(function(node,i){
+    const angle=i/n*2*Math.PI-Math.PI/2,nx=cx+rBranch*Math.cos(angle),ny=cy+rBranch*Math.sin(angle);
+    const lines=wrapLabel(node.label,11),maxLen=Math.max.apply(null,lines.map(function(l){return l.length;}));
+    let r=31+(lines.length-1)*4;if(maxLen>12)r+=4;r=Math.min(r,45);
+    let fs=maxLen>13?9.4:(maxLen>10?10.4:11.5);
+    const cls=node.active===false?'node inactive':'node active';
+    const fill=node.active===false?'#53657f':node.color;
+    const title=(node.active===false?node.label+' — coming soon':'Open '+node.label);
+    svg+='<g class="'+cls+'" data-id="'+node.id+'" transform="translate('+nx+','+ny+')" tabindex="'+(node.active===false?-1:0)+'" aria-label="'+title+'">';
+    svg+='<title>'+title+'</title>';
+    if(node.active!==false){svg+='<polygon class="node-glow" points="'+hex(r+8)+'" fill="'+fill+'" filter="url(#softGlow)"/>';}
+    svg+='<polygon class="node-circle" points="'+hex(r)+'" fill="'+fill+'" stroke="rgba(255,255,255,.55)" stroke-width="1"/>';
+    svg+='<polygon class="node-inner" points="'+hex(Math.max(9,r-9))+'" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.12)" stroke-width=".7" pointer-events="none"/>';
+    const sy=-((lines.length-1)*6.5);
+    svg+='<text style="font-size:'+fs+'px;fill:'+(node.active===false?'rgba(220,232,247,.7)':'#fff')+'">';
+    lines.forEach(function(w,li){svg+='<tspan x="0" y="'+(sy+li*13)+'">'+w+'</tspan>';});svg+='</text>';
+    if(node.sub)svg+='<text class="badge" y="'+(r+16)+'">'+node.sub+'</text>';
+    if(node.active===false)svg+='<text class="badge" y="'+(r+16)+'">soon</text>';
+    svg+='</g>';
+  });
+  svg+='</svg>';return svg;
+}
+
+function attachMapHandlers(container, onNodeClick){
+  container.querySelectorAll('.node.active').forEach(function(el){
+    el.addEventListener('click', function(){ onNodeClick(el.getAttribute('data-id')); });
+    el.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onNodeClick(el.getAttribute('data-id')); } });
+  });
+}
+
+/* ===================== FLASHCARDS ===================== */
+
+function setupFlashcards(cards){
+  fc = { cards: cards, order: cards.map(function(_,i){return i;}), pos:0, revealed:false };
+  drawFlashcard();
+}
+
+function shuffleOrder(){
+  const arr = fc.order.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    const t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+  }
+  fc.order = arr; fc.pos = 0; fc.revealed = false;
+  drawFlashcard();
+}
+
+function drawFlashcard(){
+  const box = document.getElementById('fc-box');
+  if(!box) return;
+  const idx = fc.order[fc.pos];
+  const card = fc.cards[idx];
+  box.innerHTML =
+    '<div class="fc-card">' +
+      '<div class="fc-progress">'+(fc.pos+1)+' / '+fc.cards.length+'</div>' +
+      '<div class="fc-face" id="fc-face">'+(fc.revealed ? card.a : card.q)+'</div>' +
+      '<div class="fc-label">'+(fc.revealed ? 'Answer &middot; tap to see question' : 'Question &middot; tap to reveal answer')+'</div>' +
+      '<div class="fc-nav">' +
+        '<button data-fc="prev">&lsaquo; Prev</button>' +
+        '<button data-fc="shuffle">Shuffle</button>' +
+        '<button data-fc="next">Next &rsaquo;</button>' +
+      '</div>' +
+    '</div>';
+  document.getElementById('fc-face').addEventListener('click', function(){
+    fc.revealed = !fc.revealed;
+    drawFlashcard();
+  });
+  box.querySelector('[data-fc="prev"]').addEventListener('click', function(){
+    fc.pos = (fc.pos - 1 + fc.cards.length) % fc.cards.length;
+    fc.revealed = false;
+    drawFlashcard();
+  });
+  box.querySelector('[data-fc="next"]').addEventListener('click', function(){
+    fc.pos = (fc.pos + 1) % fc.cards.length;
+    fc.revealed = false;
+    drawFlashcard();
+  });
+  box.querySelector('[data-fc="shuffle"]').addEventListener('click', shuffleOrder);
+}
+
+function renderFlashcardsSection(cards){
+  return '<div class="section"><h3>Flashcards</h3><div id="fc-box"></div></div>';
+}
+
+/* ===================== VIEWS ===================== */
+
+function renderTopBar(crumbs, onPaper){
+  let html = '<div class="topbar '+(onPaper?'on-paper':'')+'"><div class="crumb">';
+  crumbs.forEach(function(c,i){
+    if(i>0) html += '<span class="sep">&rsaquo;</span>';
+    if(c.action){
+      html += '<button data-action="'+c.action+'">'+c.label+'</button>';
+    } else {
+      html += '<span class="current">'+c.label+'</span>';
+    }
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function render(){
+  const app = document.getElementById('app');
+
+  if(state.view === 'home'){
+    const nodes = SUBJECTS.map(function(s){ return { id:s.id, label:s.name, sub:s.board, color:s.color, active:s.active }; });
+    app.innerHTML =
+      renderTopBar([{label:'Revision Map'}], false) +
+      '<div class="canvas-wrap"><div class="home-note"><strong>Your revision space</strong><br>Built for GCSE prep: learn the idea, see it visually, then test yourself.</div><div class="map-legend"><span class="legend-dot" style="color:#7cf5ef;background:#7cf5ef"></span> ACTIVE &nbsp; • &nbsp; TAP TO OPEN</div>' + renderMindMap('Brain', null, nodes) + '</div>' +
+      '<div class="hint">tap a coloured subject to open it</div>';
+    attachMapHandlers(app, function(id){ go('subject', id); });
+    return;
+  }
+
+  if(state.view === 'subject'){
+    const subject = SUBJECTS.find(function(s){return s.id===state.subjectId;});
+    const topics = TOPICS[state.subjectId] || [];
+    const nodes = topics.map(function(t){ return { id:t.id, label:t.name, color:subject.color, active:true }; });
+    app.innerHTML =
+      renderTopBar([
+        {label:'Revision Map', action:'home'},
+        {label:subject.name}
+      ], false) +
+      '<div class="canvas-wrap"><div class="map-legend"><span class="legend-dot" style="color:'+subject.color+';background:'+subject.color+'"></span> TOPICS &nbsp; • &nbsp; TAP TO REVISE</div>' + renderMindMap(subject.name, subject.board, nodes) + '</div>' +
+      '<div class="hint">tap a topic to open your revision notes</div>';
+    app.querySelector('[data-action="home"]').addEventListener('click', function(){ go('home'); });
+    attachMapHandlers(app, function(id){ go('topic', state.subjectId, id); });
+    return;
+  }
+
+  if(state.view === 'topic'){
+    const subject = SUBJECTS.find(function(s){return s.id===state.subjectId;});
+    const topic = (TOPICS[state.subjectId]||[]).find(function(t){return t.id===state.topicId;});
+    app.innerHTML =
+      renderTopBar([
+        {label:'Revision Map', action:'home'},
+        {label:subject.name, action:'subject'},
+        {label:topic.name}
+      ], true) +
+      '<div class="page style-'+subject.paper+'" style="--accent:'+subject.color+'">' +
+        '<div class="page-inner">' + topic.html + (TOPIC_EXTRAS[topic.id]||'') + renderFlashcardsSection(topic.flashcards||[]) + '</div>' +
+      '</div>';
+    app.querySelector('[data-action="home"]').addEventListener('click', function(){ go('home'); });
+    app.querySelector('[data-action="subject"]').addEventListener('click', function(){ go('subject', state.subjectId); });
+    if(topic.flashcards && topic.flashcards.length){
+      setupFlashcards(topic.flashcards);
+    }
+    return;
+  }
+}
+
+render();
+</script>
+</body>
+</html>
